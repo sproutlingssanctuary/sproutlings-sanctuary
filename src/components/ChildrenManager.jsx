@@ -82,8 +82,8 @@ export default function ChildrenManager() {
   const F = ({ label, field, type = 'text', placeholder = '', required = false }) => (
     <Field label={label} required={required}>
       {type === 'textarea'
-        ? <textarea value={form[field]} onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} onKeyDown={e => e.stopPropagation()} placeholder={placeholder} />
-        : <input type={type} value={form[field]} onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} onKeyDown={e => e.stopPropagation()} placeholder={placeholder} />
+        ? <textarea value={form[field]} onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} placeholder={placeholder} />
+        : <input type={type} value={form[field]} onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} placeholder={placeholder} />
       }
     </Field>
   );
