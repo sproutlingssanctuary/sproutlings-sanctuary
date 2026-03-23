@@ -169,22 +169,7 @@ export default function ChildrenManager() {
               <input value={form.initials} onChange={e => setForm(f => ({ ...f, initials: e.target.value.toUpperCase().slice(0,2) }))} placeholder="e.g. EJ" maxLength={2} />
             </Field>
           </div>
-          <Field label="Avatar Color">
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 4 }}>
-              {COLORS.map(col => (
-                <div
-                  key={col}
-                  onClick={() => setForm(f => ({ ...f, color: col }))}
-                  style={{
-                    width: 34, height: 34, borderRadius: '50%', background: col,
-                    cursor: 'pointer', transition: 'all 0.15s',
-                    border: form.color === col ? `3px solid var(--text)` : '3px solid transparent',
-                    boxShadow: form.color === col ? `0 0 0 2px ${col}55` : 'none',
-                  }}
-                />
-              ))}
-            </div>
-          </Field>
+
           <F label="Parent / Guardian Names" field="parents" placeholder="e.g. Sarah & Tom Johnson" />
           <F label="Emergency Contact" field="emergency_contact" placeholder="e.g. Sarah Johnson – 555-0101" />
           <F label="Medical Notes & Allergies" field="notes" type="textarea" placeholder="e.g. Severe peanut allergy – EpiPen in office drawer. Asthma inhaler in bag." />
