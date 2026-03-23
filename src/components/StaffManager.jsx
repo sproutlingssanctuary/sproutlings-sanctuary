@@ -118,7 +118,7 @@ export default function StaffManager({ currentUser }) {
           <Field label="Username" required>
             <input
               value={form.username}
-              onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase().replace(/\s/g,'') }))}
+              onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase().replace(/\s/g,'') }))}
               placeholder="e.g. sarah_smith"
               autoComplete="off"
             />
@@ -127,13 +127,13 @@ export default function StaffManager({ currentUser }) {
             <input
               type="password"
               value={form.password}
-              onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+              onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
               placeholder="Minimum 6 characters"
               autoComplete="new-password"
             />
           </Field>
           <Field label="Role">
-            <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
+            <select value={form.role} onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
               <option value="staff">Staff – Limited access</option>
               <option value="admin">Admin – Full access</option>
             </select>

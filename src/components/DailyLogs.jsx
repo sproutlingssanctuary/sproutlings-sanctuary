@@ -89,11 +89,11 @@ export default function DailyLogs() {
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-        <select value={filterChild} onChange={e => setFilterChild(e.target.value)} style={{ flex: 1, minWidth: 180 }}>
+        <select value={filterChild} onKeyDown={e=>e.stopPropagation()} onChange={e => setFilterChild(e.target.value)} style={{ flex: 1, minWidth: 180 }}>
           <option value="">All Children</option>
           {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} style={{ flex: 1, minWidth: 160 }} />
+        <input type="date" value={filterDate} onKeyDown={e=>e.stopPropagation()} onChange={e => setFilterDate(e.target.value)} style={{ flex: 1, minWidth: 160 }} />
         {(filterChild || filterDate) && (
           <Btn onClick={() => { setFilterChild(''); setFilterDate(''); }} variant="ghost" size="sm">Clear</Btn>
         )}
@@ -158,7 +158,7 @@ export default function DailyLogs() {
       {showAdd && (
         <Modal title="Add Daily Log Entry" onClose={() => setShowAdd(false)} width={500}>
           <Field label="Child" required>
-            <select value={form.childId} onChange={e => setForm(f => ({ ...f, childId: e.target.value }))}>
+            <select value={form.childId} onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, childId: e.target.value }))}>
               <option value="">Select a child...</option>
               {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
@@ -186,13 +186,13 @@ export default function DailyLogs() {
           </Field>
 
           <Field label="Date">
-            <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+            <input type="date" value={form.date} onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
           </Field>
 
           <Field label="Notes" required>
             <textarea
               value={form.note}
-              onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
+              onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
               placeholder="Describe what happened in detail..."
               style={{ minHeight: 100 }}
             />

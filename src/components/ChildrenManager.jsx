@@ -82,8 +82,8 @@ export default function ChildrenManager() {
   const F = ({ label, field, type = 'text', placeholder = '', required = false }) => (
     <Field label={label} required={required}>
       {type === 'textarea'
-        ? <textarea value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} onKeyDown={e => e.stopPropagation()} placeholder={placeholder} />
-        : <input type={type} value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} onKeyDown={e => e.stopPropagation()} placeholder={placeholder} />
+        ? <textarea value={form[field]} onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} onKeyDown={e => e.stopPropagation()} placeholder={placeholder} />
+        : <input type={type} value={form[field]} onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} onKeyDown={e => e.stopPropagation()} placeholder={placeholder} />
       }
     </Field>
   );
@@ -106,7 +106,7 @@ export default function ChildrenManager() {
         <input
           placeholder="🔍  Search children..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onKeyDown={e=>e.stopPropagation()} onChange={e => setSearch(e.target.value)}
           style={{ maxWidth: 340 }}
         />
       </div>
@@ -163,10 +163,10 @@ export default function ChildrenManager() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <Field label="Age">
               <input type="number" value={form.age} min="0" max="12"
-                onChange={e => setForm(f => ({ ...f, age: e.target.value }))} placeholder="e.g. 4" />
+                onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, age: e.target.value }))} placeholder="e.g. 4" />
             </Field>
             <Field label="Initials (auto-generated)">
-              <input value={form.initials} onChange={e => setForm(f => ({ ...f, initials: e.target.value.toUpperCase().slice(0,2) }))} placeholder="e.g. EJ" maxLength={2} />
+              <input value={form.initials} onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, initials: e.target.value.toUpperCase().slice(0,2) }))} placeholder="e.g. EJ" maxLength={2} />
             </Field>
           </div>
 

@@ -61,7 +61,7 @@ export default function AttendanceHistory() {
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div style={{ flex: 2, minWidth: 180 }}>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text3)', marginBottom: 4 }}>CHILD</label>
-          <select value={filterChild} onChange={e => setFilterChild(e.target.value)}>
+          <select value={filterChild} onKeyDown={e=>e.stopPropagation()} onChange={e => setFilterChild(e.target.value)}>
             <option value="">All Children</option>
             {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>

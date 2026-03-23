@@ -85,7 +85,7 @@ export default function AdminView({ onBack }) {
             <input
               placeholder="Username"
               value={username}
-              onChange={e => setU(e.target.value)}
+              onKeyDown={e=>e.stopPropagation()} onChange={e => setU(e.target.value)}
               autoComplete="username"
               style={{ fontSize: 16, textAlign: 'left' }}
             />
@@ -93,7 +93,7 @@ export default function AdminView({ onBack }) {
               type="password"
               placeholder="Password"
               value={password}
-              onChange={e => setP(e.target.value)}
+              onKeyDown={e=>e.stopPropagation()} onChange={e => setP(e.target.value)}
               autoComplete="current-password"
               style={{ fontSize: 16, textAlign: 'left' }}
             />
