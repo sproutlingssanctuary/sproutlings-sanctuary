@@ -4,7 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sproutlings Sanctuary</title>
-  </head>
+  
+<script>
+// Fix cursor jumping - stop all keyboard shortcuts when typing in inputs
+document.addEventListener('keydown', function(e) {
+  var tag = document.activeElement && document.activeElement.tagName.toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+    e.stopImmediatePropagation();
+    e.stopPropagation();
+  }
+}, true);
+</script>
+</head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
