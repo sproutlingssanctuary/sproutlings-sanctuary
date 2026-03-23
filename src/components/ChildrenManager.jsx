@@ -181,7 +181,7 @@ export default function ChildrenManager() {
                     border: form.color === col ? `3px solid var(--text)` : '3px solid transparent',
                     boxShadow: form.color === col ? `0 0 0 2px ${col}55` : 'none',
                   }}
-                ></button>
+                />
               ))}
             </div>
           </Field>
