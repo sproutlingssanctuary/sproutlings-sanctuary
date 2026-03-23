@@ -44,7 +44,19 @@ export default function AdminView({ onBack }) {
 
   // ── Login Screen ──────────────────────────────────────────────────────────
   if (!user) {
-    return (
+    // Block single-key tab shortcuts while user is typing
+  React.useEffect(() => {
+    const block = (e) => {
+      const tag = e.target.tagName.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener('keydown', block, true);
+    return () => document.removeEventListener('keydown', block, true);
+  }, []);
+
+  return (
       <div style={{
         minHeight: '100vh',
         background: 'linear-gradient(160deg, #E8F5EE 0%, #F2F7F4 100%)',
