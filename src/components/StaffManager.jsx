@@ -8,6 +8,10 @@ export default function StaffManager({ currentUser }) {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm]       = useState({ username: '', password: '', role: 'staff' });
   const [saving, setSaving]   = useState(false);
+  const [changePw, setChangePw] = useState(null);
+  const [newPw, setNewPw]       = useState('');
+  const [pwError, setPwError]   = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -29,6 +33,24 @@ export default function StaffManager({ currentUser }) {
       await load();
     } catch (e) { alert(e.message); }
     finally { setSaving(false); }
+  };
+
+  const savePassword = async () => {
+    if (!newPw || newPw.length < 4) { setPwError('Must be at least 4 characters'); return; }
+    setPwSaving(true); setPwError('');
+    try {
+      const token = localStorage.getItem('daycare_token');
+      const res = await fetch('/api/staff/' + changePw.id + '/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ newPassword: newPw })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setChangePw(null); setNewPw('');
+      alert('Password changed successfully!');
+    } catch(e) { setPwError(e.message); }
+    finally { setPwSaving(false); }
   };
 
   const del = async (id, username) => {
@@ -99,19 +121,45 @@ export default function StaffManager({ currentUser }) {
                 </span>
               </div>
             </div>
-            {s.id !== currentUser?.id && (
-              <Btn
-                onClick={() => del(s.id, s.username)}
-                variant="ghost"
-                size="sm"
-                style={{ color: '#FF6B6B', borderColor: '#FF6B6B30' }}
-              >
-                Remove
+            <div style={{display:'flex',gap:8}}>
+              <Btn onClick={()=>{setChangePw(s);setNewPw('');setPwError('');}} variant="ghost" size="sm">
+                🔑 Change Password
               </Btn>
-            )}
+              {s.id !== currentUser?.id && (
+                <Btn onClick={()=>del(s.id,s.username)} variant="ghost" size="sm" style={{color:'#E8734A',borderColor:'#E8734A30'}}>
+                  Remove
+                </Btn>
+              )}
+            </div>
           </div>
         ))}
       </div>
+
+      {changePw && (
+        <Modal title={'Change Password – ' + changePw.username} onClose={()=>setChangePw(null)} width={400}>
+          {pwError && (
+            <div style={{background:'#FFE8E8',color:'#E8734A',borderRadius:10,padding:'10px 16px',marginBottom:14,fontSize:14,fontWeight:700}}>
+              {pwError}
+            </div>
+          )}
+          <Field label="New Password" required>
+            <input
+              type="password"
+              value={newPw}
+              onKeyDown={e=>e.stopPropagation()}
+              onChange={e=>setNewPw(e.target.value)}
+              placeholder="Min 4 characters"
+              autoComplete="new-password"
+            />
+          </Field>
+          <div style={{display:'flex',gap:12,marginTop:8}}>
+            <Btn onClick={()=>setChangePw(null)} variant="ghost" full>Cancel</Btn>
+            <Btn onClick={savePassword} variant="primary" full disabled={pwSaving||!newPw}>
+              {pwSaving?'Saving...':'Change Password'}
+            </Btn>
+          </div>
+        </Modal>
+      )}
 
       {showAdd && (
         <Modal title="Add Staff Account" onClose={() => setShowAdd(false)} width={420}>

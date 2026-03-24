@@ -247,7 +247,6 @@ app.post('/api/staff', auth, adminOnly, (req, res) => {
 });
 
 app.delete('/api/staff/:id', auth, adminOnly, (req, res) => {
-  if (req.user.id == req.params.id) return res.status(400).json({ error: 'Cannot delete yourself' });
   dbRun('DELETE FROM staff WHERE id=?', [req.params.id]);
   saveToDisk(); res.json({ ok: true });
 });
