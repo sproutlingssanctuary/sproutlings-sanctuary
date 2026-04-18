@@ -7,7 +7,7 @@ async function queryOne(sql,params=[]){const r=await query(sql,params);return r[
 async function initDb(){
 await query(`CREATE TABLE IF NOT EXISTS staff(id SERIAL PRIMARY KEY,username TEXT UNIQUE NOT NULL,password_hash TEXT NOT NULL,role TEXT DEFAULT 'staff',created_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT*1000);CREATE TABLE IF NOT EXISTS children(id SERIAL PRIMARY KEY,name TEXT NOT NULL,age INTEGER,initials TEXT,color TEXT DEFAULT '#3A8C6E',parents TEXT,emergency_contact TEXT,notes TEXT,pin TEXT,photo TEXT,active INTEGER DEFAULT 1,created_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT*1000);CREATE TABLE IF NOT EXISTS attendance(id SERIAL PRIMARY KEY,child_id INTEGER NOT NULL,date TEXT NOT NULL,check_in BIGINT,check_out BIGINT,who TEXT);CREATE TABLE IF NOT EXISTS daily_logs(id SERIAL PRIMARY KEY,child_id INTEGER NOT NULL,date TEXT NOT NULL,type TEXT NOT NULL,note TEXT,created_by TEXT,created_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT*1000);`);
 const s=await queryOne('SELECT id FROM staff LIMIT 1');
-if(!s){await query(`INSERT INTO staff(username,password_hash,role)VALUES($1,$2,'admin')`,[' admin',bcrypt.hashSync('admin1234',10)]);console.log('Admin created');}
+if(!s){await query(`INSERT INTO staff(username,password_hash,role)VALUES($1,$2,'admin')`,['admin',bcrypt.hashSync('sprout1212',10)]);console.log('Admin created');}
 console.log('DB ready');}
 function auth(req,res,next){const t=req.headers.authorization?.split(' ')[1];if(!t)return res.status(401).json({error:'No token'});try{req.user=jwt.verify(t,JWT_SECRET);next();}catch{res.status(401).json({error:'Invalid token'});}}
 function adminOnly(req,res,next){if(req.user.role!=='admin')return res.status(403).json({error:'Admin only'});next();}
