@@ -159,7 +159,19 @@ export default function ChildrenManager() {
           onClose={() => setShowForm(false)}
           width={500}
         >
-          <F label="Full Name" field="name" placeholder="e.g. Emma Johnson" required />
+          <F label="<Field label="Full Name">
+  <input
+    value={form.name || ""}
+    placeholder="e.g. Emma Johnson"
+    onKeyDown={e => e.stopPropagation()}
+    onChange={e =>
+      setForm(prev => ({
+        ...prev,
+        name: e.target.value
+      }))
+    }
+  />
+</Field>Full Name" field="name" placeholder="e.g. Emma Johnson" required />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <Field label="Age">
               <input type="number" value={form.age} min="0" max="12"
