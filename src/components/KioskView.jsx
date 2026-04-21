@@ -20,7 +20,7 @@ export default function KioskView({ onAdminAccess }) {
 
   const load = useCallback(async () => {
     try {
-      const [kids, recs] = await Promise.all([api.getChildrenKiosk(), api.getToday()]);
+      const recs = await api.getToday();
       setChildren(kids);
       setTodayRecs(recs);
     } catch (e) { console.error(e); }
