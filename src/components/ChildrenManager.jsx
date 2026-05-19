@@ -160,6 +160,7 @@ export default function ChildrenManager() {
           width={500}
         >
           <F label="<Field label="Full Name">
+          <F label="Full Name" field="name" placeholder="e.g. Emma Johnson" required />
   <input
     value={form.name || ""}
     placeholder="e.g. Emma Johnson"
