@@ -9,6 +9,29 @@ const BLANK = {
   parents: '', emergency_contact: '', notes: '', pin: '', photo: '',
 };
 
+// Field shortcut — defined OUTSIDE the main component so it never re-mounts on re-render
+function F({ label, field, type = 'text', placeholder = '', required = false, form, setForm }) {
+  return (
+    <Field label={label} required={required}>
+      {type === 'textarea'
+        ? <textarea
+            value={form[field]}
+            onKeyDown={e => e.stopPropagation()}
+            onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
+            placeholder={placeholder}
+          />
+        : <input
+            type={type}
+            value={form[field]}
+            onKeyDown={e => e.stopPropagation()}
+            onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
+            placeholder={placeholder}
+          />
+      }
+    </Field>
+  );
+}
+
 export default function ChildrenManager() {
   const [children, setChildren] = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -79,15 +102,6 @@ export default function ChildrenManager() {
     } catch (e) { alert(e.message); }
   };
 
-  const F = ({ label, field, type = 'text', placeholder = '', required = false }) => (
-    <Field label={label} required={required}>
-      {type === 'textarea'
-        ? <textarea value={form[field]} onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} placeholder={placeholder} />
-        : <input type={type} value={form[field]} onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} placeholder={placeholder} />
-      }
-    </Field>
-  );
-
   const filtered = children.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase())
   );
@@ -106,7 +120,8 @@ export default function ChildrenManager() {
         <input
           placeholder="🔍  Search children..."
           value={search}
-          onKeyDown={e=>e.stopPropagation()} onChange={e => setSearch(e.target.value)}
+          onKeyDown={e => e.stopPropagation()}
+          onChange={e => setSearch(e.target.value)}
           style={{ maxWidth: 340 }}
         />
       </div>
@@ -159,21 +174,27 @@ export default function ChildrenManager() {
           onClose={() => setShowForm(false)}
           width={500}
         >
-    <F label="Full Name" field="name" placeholder="e.g. Emma Johnson" required />
+          <F label="Full Name" field="name" placeholder="e.g. Emma Johnson" required form={form} setForm={setForm} />
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <Field label="Age">
               <input type="number" value={form.age} min="0" max="12"
-                onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, age: e.target.value }))} placeholder="e.g. 4" />
+                onKeyDown={e => e.stopPropagation()}
+                onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
+                placeholder="e.g. 4" />
             </Field>
             <Field label="Initials (auto-generated)">
-              <input value={form.initials} onKeyDown={e=>e.stopPropagation()} onChange={e => setForm(f => ({ ...f, initials: e.target.value.toUpperCase().slice(0,2) }))} placeholder="e.g. EJ" maxLength={2} />
+              <input value={form.initials}
+                onKeyDown={e => e.stopPropagation()}
+                onChange={e => setForm(f => ({ ...f, initials: e.target.value.toUpperCase().slice(0, 2) }))}
+                placeholder="e.g. EJ" maxLength={2} />
             </Field>
           </div>
 
-          <F label="Parent / Guardian Names" field="parents" placeholder="e.g. Sarah & Tom Johnson" />
-          <F label="Emergency Contact" field="emergency_contact" placeholder="e.g. Sarah Johnson – 555-0101" />
-          <F label="Medical Notes & Allergies" field="notes" type="textarea" placeholder="e.g. Severe peanut allergy – EpiPen in office drawer. Asthma inhaler in bag." />
-          <F label="Check-In PIN (optional – leave blank for no PIN)" field="pin" type="password" placeholder="4–6 digit PIN" />
+          <F label="Parent / Guardian Names" field="parents" placeholder="e.g. Sarah & Tom Johnson" form={form} setForm={setForm} />
+          <F label="Emergency Contact" field="emergency_contact" placeholder="e.g. Sarah Johnson – 555-0101" form={form} setForm={setForm} />
+          <F label="Medical Notes & Allergies" field="notes" type="textarea" placeholder="e.g. Severe peanut allergy – EpiPen in office drawer." form={form} setForm={setForm} />
+          <F label="Check-In PIN (optional – leave blank for no PIN)" field="pin" type="password" placeholder="4–6 digit PIN" form={form} setForm={setForm} />
 
           <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
             <Btn onClick={() => setShowForm(false)} variant="ghost" full>Cancel</Btn>
