@@ -1,4 +1,3 @@
-const express=require('express')...INSERT INTO staff(username,password_hash,role)
 const express=require('express'),bcrypt=require('bcryptjs'),jwt=require('jsonwebtoken'),cors=require('cors'),path=require('path'),{Pool}=require('pg');
 const app=express(),PORT=process.env.PORT||3001,JWT_SECRET=process.env.JWT_SECRET||'sproutlings2024';
 app.use(cors({origin:'*'}));app.use(express.json({limit:'5mb'}));
