@@ -4,7 +4,9 @@ import * as api from '../utils/api';
 
 function fmt(ts) {
   if (!ts) return '—';
-  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const d = new Date(typeof ts === 'number' && ts < 1e12 ? ts * 1000 : ts);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 export default function KioskView({ onAdminAccess }) {
@@ -17,6 +19,8 @@ export default function KioskView({ onAdminAccess }) {
   const [pinMode, setPinMode]     = useState(null);
   const [toast, setToast]         = useState(null);
   const [loading, setLoading]     = useState(false);
+  const [sigMode, setSigMode]     = useState(false);
+  const [signature, setSignature] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -51,15 +55,23 @@ export default function KioskView({ onAdminAccess }) {
   const handleSelect = (child) => {
     setSelected(child);
     setWho('');
+    setSignature('');
+    setSigMode(false);
     setStep('action');
   };
 
   const handleAction = (type) => {
+    if (!who.trim()) {
+      showToast('Please enter who is dropping off / picking up', 'coral');
+      return;
+    }
     if (selected.pin) {
       setPinMode(type);
       setStep('pin');
     } else {
-      finalize(type, null);
+      setSigMode(true);
+      setPinMode(type);
+      setStep('signature');
     }
   };
 
@@ -83,10 +95,10 @@ export default function KioskView({ onAdminAccess }) {
     try {
       if (type === 'in') {
         await api.checkIn(selected.id, who);
-        showToast(`✓ ${selected.name} checked in!`, 'grass');
+        showToast(`✓ ${selected.name} checked in! Signed by ${who}`, 'grass');
       } else {
         await api.checkOut(selected.id, who);
-        showToast(`✓ ${selected.name} checked out!`, 'coral');
+        showToast(`✓ ${selected.name} checked out! Signed by ${who}`, 'coral');
       }
       await load();
     } catch (e) {
@@ -96,8 +108,18 @@ export default function KioskView({ onAdminAccess }) {
       setStep('list');
       setSelected(null);
       setWho('');
+      setSignature('');
+      setSigMode(false);
       setPinMode(null);
     }
+  };
+
+  const handleSignature = () => {
+    if (!signature.trim()) {
+      showToast('Please type your full name as signature', 'coral');
+      return;
+    }
+    finalize(pinMode, null);
   };
 
   const filtered = children.filter(c =>
@@ -144,7 +166,7 @@ export default function KioskView({ onAdminAccess }) {
                 placeholder="🔍  Search child name..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                style={{ fontSize: 18, padding: '14px 18px', borderRadius: 14, border: '2px solid var(--border)' }}
+                style={{ fontSize: 18, padding: '14px 18px', borderRadius: 14, border: '2px solid var(--border)', width: '100%' }}
               />
             </div>
             <div style={{
@@ -172,6 +194,7 @@ export default function KioskView({ onAdminAccess }) {
                       textAlign: 'left',
                       transition: 'all 0.15s',
                       boxShadow: checked ? '0 0 0 4px #5BAD5B18' : 'var(--shadow)',
+                      width: '100%',
                     }}
                     onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                     onMouseLeave={e => e.currentTarget.style.transform = ''}
@@ -220,11 +243,14 @@ export default function KioskView({ onAdminAccess }) {
             )}
 
             <div style={{ margin: '16px 0' }}>
+              <label style={{ display: 'block', fontWeight: 700, fontSize: 14, color: 'var(--text2)', marginBottom: 8, textAlign: 'left' }}>
+                Dropped off / picked up by: <span style={{ color: 'red' }}>*</span>
+              </label>
               <input
-                placeholder="Dropped off / picked up by..."
+                placeholder="Full name required..."
                 value={who}
                 onChange={e => setWho(e.target.value)}
-                style={{ textAlign: 'center', fontSize: 16, borderRadius: 12 }}
+                style={{ textAlign: 'center', fontSize: 16, borderRadius: 12, width: '100%', padding: '12px 16px', border: '2px solid var(--border)' }}
               />
             </div>
 
@@ -271,6 +297,59 @@ export default function KioskView({ onAdminAccess }) {
           </div>
         )}
 
+        {/* Signature Screen — for children without PIN */}
+        {step === 'signature' && selected && (
+          <div className="slide-up" style={{
+            background: '#fff', borderRadius: 24, padding: 36,
+            boxShadow: 'var(--shadow-md)', textAlign: 'center', maxWidth: 440, margin: '0 auto',
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>✍️</div>
+            <h2 style={{ fontSize: 24, marginBottom: 8 }}>Signature Required</h2>
+            <p style={{ color: 'var(--text2)', fontSize: 15, marginBottom: 24 }}>
+              Please type your full name to confirm {pinMode === 'in' ? 'drop-off' : 'pick-up'} of <strong>{selected.name}</strong>
+            </p>
+            <input
+              placeholder="Type your full name..."
+              value={signature}
+              onChange={e => setSignature(e.target.value)}
+              style={{
+                width: '100%', fontSize: 18, padding: '14px 16px',
+                borderRadius: 12, border: '2px solid var(--border)',
+                fontFamily: 'cursive', textAlign: 'center', marginBottom: 20,
+              }}
+              autoFocus
+            />
+            <div style={{ background: '#f8f9fa', borderRadius: 12, padding: '12px 16px', marginBottom: 20, textAlign: 'left' }}>
+              <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 4 }}>Confirming:</div>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>{who} is {pinMode === 'in' ? 'dropping off' : 'picking up'} {selected.name}</div>
+              <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 4 }}>{new Date().toLocaleString()}</div>
+            </div>
+            <button
+              onClick={handleSignature}
+              disabled={loading || !signature.trim()}
+              style={{
+                width: '100%', padding: '18px', borderRadius: 14,
+                background: !signature.trim() || loading ? '#ccc' : pinMode === 'in' ? '#5BAD5B' : '#E8734A',
+                color: '#fff', fontWeight: 900, fontSize: 18,
+                border: 'none', cursor: !signature.trim() || loading ? 'not-allowed' : 'pointer',
+                marginBottom: 12,
+              }}
+            >
+              ✓ Confirm & {pinMode === 'in' ? 'Check In' : 'Check Out'}
+            </button>
+            <button
+              onClick={() => { setStep('action'); setSigMode(false); setPinMode(null); }}
+              style={{
+                background: 'transparent', border: '2px solid var(--border)', borderRadius: 12,
+                padding: '12px 24px', fontFamily: 'Nunito', fontWeight: 700, fontSize: 16,
+                cursor: 'pointer', color: 'var(--text2)',
+              }}
+            >
+              ← Back
+            </button>
+          </div>
+        )}
+
         {/* PIN Entry */}
         {step === 'pin' && selected && (
           <div className="slide-up" style={{
@@ -280,6 +359,9 @@ export default function KioskView({ onAdminAccess }) {
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <Avatar child={selected} size={56} />
               <h2 style={{ marginTop: 12, fontSize: 20 }}>{selected.name}</h2>
+              <p style={{ color: 'var(--text2)', fontSize: 14, marginTop: 4 }}>
+                {who} is {pinMode === 'in' ? 'dropping off' : 'picking up'}
+              </p>
             </div>
             <PinPad
               label={`Enter PIN to check ${pinMode}`}
