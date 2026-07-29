@@ -12,15 +12,18 @@ export default function KioskView({ onAdminAccess }) {
   const [todayRecs, setTodayRecs] = useState([]);
   const [search, setSearch]       = useState('');
   const [selected, setSelected]   = useState(null);
-  const [step, setStep]           = useState('list'); // list | action | pin
+  const [step, setStep]           = useState('list');
   const [who, setWho]             = useState('');
-  const [pinMode, setPinMode]     = useState(null);  // 'in' | 'out'
+  const [pinMode, setPinMode]     = useState(null);
   const [toast, setToast]         = useState(null);
   const [loading, setLoading]     = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const recs = await api.getToday();
+      const [kids, recs] = await Promise.all([
+        api.getChildrenKiosk(),
+        api.getToday()
+      ]);
       setChildren(kids);
       setTodayRecs(recs);
     } catch (e) { console.error(e); }
@@ -28,7 +31,6 @@ export default function KioskView({ onAdminAccess }) {
 
   useEffect(() => { load(); }, [load]);
 
-  // Auto-refresh every 30 seconds
   useEffect(() => {
     const id = setInterval(load, 30000);
     return () => clearInterval(id);
@@ -207,7 +209,6 @@ export default function KioskView({ onAdminAccess }) {
             <h2 style={{ marginTop: 16, fontSize: 28 }}>{selected.name}</h2>
             <p style={{ color: 'var(--text2)', marginBottom: 4 }}>Age {selected.age}</p>
 
-            {/* Notes warning */}
             {selected.notes && (
               <div style={{
                 background: '#FFF9E6', border: '2px solid #FFB80040',
