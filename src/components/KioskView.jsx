@@ -4,9 +4,9 @@ import * as api from '../utils/api';
 
 function fmt(ts) {
   if (!ts) return '—';
-  const d = new Date(typeof ts === 'number' && ts < 1e12 ? ts * 1000 : ts);
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const ms = Number(ts);
+  if (isNaN(ms)) return '—';
+  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 export default function KioskView({ onAdminAccess }) {
