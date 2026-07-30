@@ -60,6 +60,7 @@ export const verifyPin   = (childId, pin) => request('/kiosk/verify-pin', { meth
 export const checkIn     = (childId, who) => request('/attendance/checkin', { method: 'POST', body: JSON.stringify({ childId, who }) });
 export const checkOut    = (childId, who) => request('/attendance/checkout', { method: 'POST', body: JSON.stringify({ childId, who }) });
 export const getToday    = () => request('/attendance/today');
+export const deleteAttendance = (id) => request(`/attendance/${id}`, { method: 'DELETE' });
 
 // ─── Attendance ──────────────────────────────────────────────────────────────
 export const getHistory  = (params = {}) => {
