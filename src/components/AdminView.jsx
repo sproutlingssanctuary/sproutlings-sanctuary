@@ -1,185 +1,348 @@
-import React, { useState } from 'react';
-import Dashboard from './Dashboard';
-import ChildrenManager from './ChildrenManager';
-import DailyLogs from './DailyLogs';
-import AttendanceHistory from './AttendanceHistory';
-import StaffManager from './StaffManager';
-import { Btn } from './UI';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Avatar, Card, EmptyState } from './UI';
 import * as api from '../utils/api';
 
-const TABS = [
-  { id: 'dashboard', label: '📊 Dashboard' },
-  { id: 'children',  label: '👶 Children'  },
-  { id: 'logs',      label: '📝 Daily Logs' },
-  { id: 'history',   label: '📅 History'    },
-  { id: 'staff',     label: '👤 Staff'      },
-];
+function fmt(ts) {
+  if (!ts) return '—';
+  const ms = Number(ts);
+  if (isNaN(ms)) return '—';
+  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
 
-export default function AdminView({ onBack }) {
-  const [user, setUser]     = useState(api.getCurrentUser());
-  const [tab, setTab]       = useState('dashboard');
-  const [username, setU]    = useState('');
-  const [password, setP]    = useState('');
-  const [error, setError]   = useState('');
-  const [loading, setLoading] = useState(false);
+function fmtDate(str) {
+  if (!str) return '—';
+  const d = new Date(str + 'T12:00:00');
+  return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+}
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true); setError('');
+function duration(checkIn, checkOut) {
+  if (!checkIn || !checkOut) return null;
+  const mins = Math.round((Number(checkOut) - Number(checkIn)) / 60000);
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function QRModal({ url, onClose }) {
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+    }} onClick={onClose}>
+      <div style={{
+        background: '#fff', borderRadius: 24, padding: 40, maxWidth: 420, width: '90%',
+        textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+      }} onClick={e => e.stopPropagation()}>
+        <h2 style={{ fontSize: 22, fontWeight: 900, marginBottom: 8 }}>📱 Parent Check-In QR Code</h2>
+        <p style={{ color: '#666', fontSize: 14, marginBottom: 24 }}>
+          Parents scan this to open the check-in kiosk on their phone
+        </p>
+        <img
+          src={qrUrl}
+          alt="QR Code"
+          style={{ width: 250, height: 250, borderRadius: 12, border: '2px solid #eee', marginBottom: 20 }}
+        />
+        <div style={{
+          background: '#f8f9fa', borderRadius: 12, padding: '10px 16px',
+          fontSize: 12, color: '#666', wordBreak: 'break-all', marginBottom: 24,
+        }}>
+          {url}
+        </div>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <button
+            onClick={() => window.print()}
+            style={{
+              padding: '12px 24px', borderRadius: 12, border: 'none',
+              background: '#3A8C6E', color: '#fff', fontWeight: 700,
+              fontSize: 15, cursor: 'pointer',
+            }}
+          >
+            🖨️ Print QR Code
+          </button>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '12px 24px', borderRadius: 12,
+              border: '2px solid #eee', background: '#fff',
+              fontWeight: 700, fontSize: 15, cursor: 'pointer',
+            }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function Dashboard() {
+  const [today, setToday]         = useState([]);
+  const [children, setChildren]   = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [showQR, setShowQR]       = useState(false);
+  const [clearing, setClearing]   = useState(false);
+
+  const appUrl = window.location.origin;
+
+  const load = useCallback(async () => {
     try {
-      const u = await api.login(username, password);
-      setUser(u);
-    } catch {
-      setError('Incorrect username or password.');
+      const [recs, kids] = await Promise.all([api.getToday(), api.getChildrenFull()]);
+      setToday(recs);
+      setChildren(kids);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
+  }, [load]);
+
+  const clearTodayTimeline = async () => {
+    if (!window.confirm('Delete ALL of today\'s attendance records? This cannot be undone.')) return;
+    setClearing(true);
+    try {
+      await Promise.all(today.map(r => api.deleteAttendance(r.id)));
+      await load();
+    } catch (e) {
+      alert('Could not delete some records: ' + e.message);
     } finally {
-      setLoading(false);
+      setClearing(false);
     }
   };
 
-  const handleLogout = () => {
-    api.logout();
-    setUser(null);
-    setU(''); setP(''); setError('');
+  const deleteRecord = async (id) => {
+    if (!window.confirm('Delete this record?')) return;
+    try {
+      await api.deleteAttendance(id);
+      await load();
+    } catch (e) {
+      alert('Could not delete: ' + e.message);
+    }
   };
 
-  // ── Login Screen ──────────────────────────────────────────────────────────
-  if (!user) {
-    // Block single-key tab shortcuts while user is typing
-  React.useEffect(() => {
-    const block = (e) => {
-      const tag = e.target.tagName.toLowerCase();
-      if (tag === 'input' || tag === 'textarea' || tag === 'select') {
-        e.stopPropagation();
-      }
-    };
-    document.addEventListener('keydown', block, true);
-    return () => document.removeEventListener('keydown', block, true);
-  }, []);
+  const checkedIn = children.filter(c => {
+    const recs = today.filter(r => r.child_id === c.id);
+    if (!recs.length) return false;
+    const last = [...recs].sort((a,b)=>(Number(b.check_in)||0)-(Number(a.check_in)||0))[0];
+    return last.check_in && !last.check_out;
+  });
+
+  const checkedOut = children.filter(c => {
+    const recs = today.filter(r => r.child_id === c.id);
+    if (!recs.length) return false;
+    return recs.some(r => r.check_out);
+  });
+
+  const notArrived = children.filter(c => !today.some(r => r.child_id === c.id));
+
+  const StatCard = ({ label, value, color, icon }) => (
+    <div style={{
+      background: '#fff', borderRadius: 16, padding: '20px 24px',
+      border: `2px solid ${color}30`, textAlign: 'center', flex: 1,
+    }}>
+      <div style={{ fontSize: 32, marginBottom: 6 }}>{icon}</div>
+      <div style={{ fontSize: 44, fontWeight: 900, color, lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 14, color: 'var(--text2)', fontWeight: 600, marginTop: 6 }}>{label}</div>
+    </div>
+  );
+
+  if (loading) return (
+    <div style={{ textAlign: 'center', padding: '80px', color: 'var(--text3)' }}>Loading…</div>
+  );
 
   return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(160deg, #E8F5EE 0%, #F2F7F4 100%)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-      }}>
-        <div className="slide-up" style={{
-          background: '#fff', borderRadius: 24, padding: 40, maxWidth: 380, width: '100%',
-          boxShadow: '0 12px 48px rgba(0,0,0,0.12)', textAlign: 'center',
-        }}>
-          <div style={{ fontSize: 52, marginBottom: 8 }}>🔐</div>
-          <h1 style={{ fontSize: 26, marginBottom: 4 }}>Staff Login</h1>
-          <p style={{ color: 'var(--text2)', marginBottom: 28, fontSize: 15 }}>
-            Sproutlings Sanctuary Admin Panel
-          </p>
+    <div>
+      {showQR && <QRModal url={appUrl} onClose={() => setShowQR(false)} />}
 
-          {error && (
-            <div style={{
-              background: '#FFE8E8', color: '#E8734A', borderRadius: 12,
-              padding: '12px 16px', marginBottom: 16, fontSize: 14, fontWeight: 700,
-            }}>
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <input
-              placeholder="Username"
-              value={username}
-              onKeyDown={e=>e.stopPropagation()} onChange={e => setU(e.target.value)}
-              autoComplete="username"
-              style={{ fontSize: 16, textAlign: 'left' }}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onKeyDown={e=>e.stopPropagation()} onChange={e => setP(e.target.value)}
-              autoComplete="current-password"
-              style={{ fontSize: 16, textAlign: 'left' }}
-            />
-            <button
-              type="submit"
-              disabled={loading || !username || !password}
-              style={{
-                padding: '14px', borderRadius: 12, border: 'none',
-                background: loading ? '#ccc' : '#3A8C6E', color: '#fff',
-                fontFamily: 'Nunito', fontWeight: 800, fontSize: 17, cursor: 'pointer',
-                transition: 'background 0.15s',
-              }}
-            >
-              {loading ? 'Signing in…' : 'Sign In'}
-            </button>
-          </form>
-
-          <div style={{ marginTop: 20, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
-            <button
-              onClick={onBack}
-              style={{ background: 'none', border: 'none', color: 'var(--sky)', fontFamily: 'Nunito', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}
-            >
-              ← Back to Kiosk
-            </button>
-          </div>
-
-          <p style={{ fontSize: 12, color: 'var(--text3)', marginTop: 16 }}>
-            Default: admin / admin1234
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Admin Shell ────────────────────────────────────────────────────────────
-  return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      {/* Top Nav */}
-      <div style={{
-        background: '#fff', borderBottom: '2px solid var(--border)',
-        display: 'flex', alignItems: 'center', padding: '0 24px',
-        position: 'sticky', top: 0, zIndex: 100,
-        overflowX: 'auto',
-      }}>
-        <div style={{ padding: '16px 0', marginRight: 28, fontWeight: 900, fontSize: 20, flexShrink: 0, whiteSpace: 'nowrap' }}>
-          🌱 Sproutlings
-        </div>
-
-        {TABS.filter(t => t.id !== 'staff' || user.role === 'admin').map(t => (
+      {/* Header row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
+        <h2 style={{ fontSize: 22 }}>Attendance Dashboard</h2>
+        <div style={{ display: 'flex', gap: 10 }}>
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
+            onClick={() => setShowQR(true)}
             style={{
-              padding: '18px 18px',
-              border: 'none',
-              borderBottom: tab === t.id ? '3px solid #3A8C6E' : '3px solid transparent',
-              background: 'transparent',
-              fontFamily: 'Nunito', fontWeight: 700, fontSize: 15,
-              color: tab === t.id ? '#3A8C6E' : 'var(--text2)',
-              cursor: 'pointer', flexShrink: 0, marginBottom: -2,
-              transition: 'color 0.15s',
-              whiteSpace: 'nowrap',
+              padding: '10px 20px', borderRadius: 12, border: 'none',
+              background: '#3A8C6E', color: '#fff', fontWeight: 700,
+              fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
             }}
           >
-            {t.label}
+            📱 QR Code for Parents
           </button>
-        ))}
-
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center', paddingLeft: 16, flexShrink: 0 }}>
-          <span style={{ fontSize: 13, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
-            👋 {user.username}
-            {user.role === 'admin' && <span style={{ marginLeft: 4, color: '#CC8800', fontSize: 12 }}>⭐</span>}
-          </span>
-          <Btn onClick={onBack} variant="ghost" size="sm" style={{ whiteSpace: 'nowrap' }}>Kiosk View</Btn>
-          <Btn onClick={handleLogout} variant="danger" size="sm" style={{ background: '#FFE8E8', color: '#E8734A', whiteSpace: 'nowrap' }}>Logout</Btn>
+          <button
+            onClick={clearTodayTimeline}
+            disabled={clearing || today.length === 0}
+            style={{
+              padding: '10px 20px', borderRadius: 12,
+              border: '2px solid #E8734A',
+              background: '#fff', color: '#E8734A', fontWeight: 700,
+              fontSize: 14, cursor: today.length === 0 ? 'not-allowed' : 'pointer',
+              opacity: today.length === 0 ? 0.5 : 1,
+            }}
+          >
+            {clearing ? 'Clearing...' : '🗑️ Clear Today'}
+          </button>
         </div>
       </div>
 
-      {/* Content */}
-      <div style={{ padding: '28px 24px', maxWidth: 1100, margin: '0 auto' }}>
-        {tab === 'dashboard' && <Dashboard />}
-        {tab === 'children'  && <ChildrenManager />}
-        {tab === 'logs'      && <DailyLogs />}
-        {tab === 'history'   && <AttendanceHistory />}
-        {tab === 'staff' && user.role === 'admin' && <StaffManager currentUser={user} />}
+      <p style={{ color: 'var(--text3)', fontSize: 14, marginBottom: 24 }}>
+        {new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+        {' · '}Auto-refreshes every 30s
+      </p>
+
+      {/* Stats Row */}
+      <div style={{ display: 'flex', gap: 14, marginBottom: 28, flexWrap: 'wrap' }}>
+        <StatCard label="Currently Present" value={checkedIn.length} color="#5BAD5B" icon="✅" />
+        <StatCard label="Checked Out" value={checkedOut.length} color="#E8734A" icon="🏠" />
+        <StatCard label="Not Arrived" value={notArrived.length} color="#8A9AB0" icon="⏳" />
+        <StatCard label="Total Enrolled" value={children.length} color="#3A8C6E" icon="👶" />
       </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+
+        {/* Currently In */}
+        <Card style={{ border: '2px solid #5BAD5B30' }}>
+          <h3 style={{ fontSize: 16, color: '#5BAD5B', marginBottom: 14, fontWeight: 800 }}>
+            ✓ Currently Here ({checkedIn.length})
+          </h3>
+          {checkedIn.length === 0
+            ? <p style={{ color: 'var(--text3)', fontSize: 14 }}>No children present yet.</p>
+            : checkedIn.map(c => {
+                const rec = [...today.filter(r => r.child_id === c.id)].sort((a,b)=>(Number(b.check_in)||0)-(Number(a.check_in)||0))[0];
+                return (
+                  <div key={c.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10,
+                    padding: '10px 12px', background: '#f9fafb', borderRadius: 12,
+                  }}>
+                    <Avatar child={c} size={38} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15 }}>{c.name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text3)' }}>
+                        In: {fmt(rec?.check_in)}{rec?.who ? ` · ${rec.who}` : ''}
+                      </div>
+                    </div>
+                    {c.notes && <div title={c.notes} style={{ fontSize: 16, cursor: 'help' }}>⚠️</div>}
+                  </div>
+                );
+              })
+          }
+        </Card>
+
+        {/* Checked Out */}
+        <Card style={{ border: '2px solid #E8734A30' }}>
+          <h3 style={{ fontSize: 16, color: '#E8734A', marginBottom: 14, fontWeight: 800 }}>
+            → Went Home ({checkedOut.length})
+          </h3>
+          {checkedOut.length === 0
+            ? <p style={{ color: 'var(--text3)', fontSize: 14 }}>No departures yet today.</p>
+            : checkedOut.map(c => {
+                const recs = today.filter(r => r.child_id === c.id);
+                const lastOut = [...recs].filter(r => r.check_out).sort((a,b)=>Number(b.check_out)-Number(a.check_out))[0];
+                return (
+                  <div key={c.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10,
+                    padding: '10px 12px', background: '#f9fafb', borderRadius: 12,
+                  }}>
+                    <Avatar child={c} size={38} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15 }}>{c.name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text3)' }}>
+                        {fmt(lastOut?.check_in)} → {fmt(lastOut?.check_out)}
+                        {lastOut?.check_in && lastOut?.check_out &&
+                          <span style={{ marginLeft: 6, background: '#E8A94A22', color: '#CC8800', padding: '1px 8px', borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
+                            {duration(lastOut.check_in, lastOut.check_out)}
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+          }
+        </Card>
+      </div>
+
+      {/* Today's Timeline */}
+      <Card>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 800 }}>Today's Timeline</h3>
+          {today.length > 0 && (
+            <span style={{ fontSize: 13, color: 'var(--text3)' }}>
+              Click ✕ to delete individual records
+            </span>
+          )}
+        </div>
+        {today.length === 0
+          ? <EmptyState icon="📋" message="No activity recorded today yet." />
+          : (
+            <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+              {[...today]
+                .sort((a, b) => Math.max(Number(b.check_in)||0, Number(b.check_out)||0) - Math.max(Number(a.check_in)||0, Number(a.check_out)||0))
+                .map((r, i) => {
+                  const c = children.find(ch => ch.id === r.child_id);
+                  const isCheckIn = r.check_in && !r.check_out;
+                  return (
+                    <div key={i} style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '10px 0', borderBottom: '1px solid var(--border)',
+                    }}>
+                      <div style={{
+                        width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+                        background: isCheckIn ? '#5BAD5B' : '#E8734A',
+                      }} />
+                      {c && <Avatar child={c} size={30} />}
+                      <div style={{ flex: 1 }}>
+                        <span style={{ fontWeight: 700 }}>{r.name || '?'}</span>
+                        <span style={{ color: 'var(--text2)', fontSize: 14 }}>
+                          {' '}{isCheckIn ? 'checked in' : 'checked out'}
+                          {' at '}
+                          <strong>{fmt(isCheckIn ? r.check_in : r.check_out)}</strong>
+                        </span>
+                        {r.who && <span style={{ color: 'var(--text3)', fontSize: 13 }}> · {r.who}</span>}
+                      </div>
+                      <button
+                        onClick={() => deleteRecord(r.id)}
+                        title="Delete this record"
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: '#ccc', fontSize: 16, padding: '4px 8px',
+                          borderRadius: 8, flexShrink: 0,
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#E8734A'}
+                        onMouseLeave={e => e.currentTarget.style.color = '#ccc'}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  );
+                })}
+            </div>
+          )
+        }
+      </Card>
+
+      {/* Not Arrived */}
+      {notArrived.length > 0 && (
+        <Card style={{ marginTop: 20 }}>
+          <h3 style={{ fontSize: 16, marginBottom: 14, fontWeight: 800, color: 'var(--text2)' }}>
+            ⏳ Not Arrived Yet ({notArrived.length})
+          </h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {notArrived.map(c => (
+              <div key={c.id} style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
+                background: '#f9fafb', borderRadius: 12, border: '1px solid var(--border)',
+              }}>
+                <Avatar child={c} size={30} />
+                <span style={{ fontWeight: 700, fontSize: 14 }}>{c.name}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
