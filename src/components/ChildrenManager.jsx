@@ -5,11 +5,20 @@ import * as api from '../utils/api';
 const COLORS = ['#FF6B6B', '#3A8C6E', '#9B8EC4', '#5BAD5B', '#FFB800', '#FF9500', '#00BCD4', '#E91E63', '#795548'];
 
 const BLANK = {
-  name: '', age: '', initials: '', color: '#3A8C6E',
+  name: '', dob: '', initials: '', color: '#3A8C6E',
   parents: '', emergency_contact: '', notes: '', pin: '', photo: '',
 };
 
-// Field shortcut — defined OUTSIDE the main component so it never re-mounts on re-render
+function calcAge(dob){
+  if(!dob) return null;
+  const birth = new Date(dob);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if(m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+  return age;
+}
+
 function F({ label, field, type = 'text', placeholder = '', required = false, form, setForm }) {
   return (
     <Field label={label} required={required}>
@@ -58,7 +67,7 @@ export default function ChildrenManager() {
   const openEdit = (child) => {
     setForm({
       name: child.name || '',
-      age: child.age || '',
+      dob: child.dob ? child.dob.slice(0,10) : '',
       initials: child.initials || '',
       color: child.color || '#3A8C6E',
       parents: child.parents || '',
@@ -77,7 +86,6 @@ export default function ChildrenManager() {
     try {
       const payload = {
         ...form,
-        age: Number(form.age) || null,
         initials: form.initials || form.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
       };
       if (editId) {
@@ -144,7 +152,9 @@ export default function ChildrenManager() {
               <Avatar child={c} size={54} />
               <div>
                 <div style={{ fontWeight: 800, fontSize: 17 }}>{c.name}</div>
-                <div style={{ fontSize: 13, color: 'var(--text3)' }}>Age {c.age || '?'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text3)' }}>
+                  {c.dob ? `Age ${calcAge(c.dob)}` : `Age ${c.age || '?'}`}
+                </div>
                 {c.pin && <Badge label="🔒 PIN set" color="#3A8C6E" />}
               </div>
             </div>
@@ -177,11 +187,13 @@ export default function ChildrenManager() {
           <F label="Full Name" field="name" placeholder="e.g. Emma Johnson" required form={form} setForm={setForm} />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <Field label="Age">
-              <input type="number" value={form.age} min="0" max="12"
+            <Field label="Date of Birth">
+              <input
+                type="date"
+                value={form.dob}
                 onKeyDown={e => e.stopPropagation()}
-                onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
-                placeholder="e.g. 4" />
+                onChange={e => setForm(f => ({ ...f, dob: e.target.value }))}
+              />
             </Field>
             <Field label="Initials (auto-generated)">
               <input value={form.initials}
@@ -190,6 +202,12 @@ export default function ChildrenManager() {
                 placeholder="e.g. EJ" maxLength={2} />
             </Field>
           </div>
+
+          {form.dob && (
+            <div style={{ fontSize: 14, color: '#3A8C6E', fontWeight: 700, marginTop: -8, marginBottom: 4 }}>
+              🎂 Age: {calcAge(form.dob)} years old
+            </div>
+          )}
 
           <F label="Parent / Guardian Names" field="parents" placeholder="e.g. Sarah & Tom Johnson" form={form} setForm={setForm} />
           <F label="Emergency Contact" field="emergency_contact" placeholder="e.g. Sarah Johnson – 555-0101" form={form} setForm={setForm} />
