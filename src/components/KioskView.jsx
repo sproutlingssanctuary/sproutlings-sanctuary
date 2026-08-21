@@ -9,6 +9,16 @@ function fmt(ts) {
   return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+function calcAge(dob){
+  if(!dob) return null;
+  const birth = new Date(dob);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if(m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+  return age;
+}
+
 export default function KioskView({ onAdminAccess }) {
   const [children, setChildren]   = useState([]);
   const [todayRecs, setTodayRecs] = useState([]);
@@ -178,6 +188,7 @@ export default function KioskView({ onAdminAccess }) {
               {filtered.map(child => {
                 const checked = isIn(child);
                 const rec = todayRecs.filter(r => r.child_id === child.id).sort((a,b)=>(b.check_in||0)-(a.check_in||0))[0];
+                const displayAge = child.dob ? calcAge(child.dob) : child.age;
                 return (
                   <button
                     key={child.id}
@@ -202,7 +213,7 @@ export default function KioskView({ onAdminAccess }) {
                     <Avatar child={child} size={52} />
                     <div>
                       <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)' }}>{child.name}</div>
-                      <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 6 }}>Age {child.age}</div>
+                      <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 6 }}>Age {displayAge}</div>
                       <div style={{
                         display: 'inline-block', padding: '3px 12px', borderRadius: 20,
                         background: checked ? '#5BAD5B22' : '#f1f5f9',
@@ -230,7 +241,9 @@ export default function KioskView({ onAdminAccess }) {
           }}>
             <Avatar child={selected} size={80} />
             <h2 style={{ marginTop: 16, fontSize: 28 }}>{selected.name}</h2>
-            <p style={{ color: 'var(--text2)', marginBottom: 4 }}>Age {selected.age}</p>
+            <p style={{ color: 'var(--text2)', marginBottom: 4 }}>
+              Age {selected.dob ? calcAge(selected.dob) : selected.age}
+            </p>
 
             {selected.notes && (
               <div style={{
