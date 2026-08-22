@@ -61,7 +61,6 @@ export default function Transitions() {
     try { await api.deleteTransition(id); await load(); } catch (e) { alert(e.message); }
   };
 
-  // Auto-calculate expected exit from DOB if not manually set
   const enriched = children.map(c => {
     const manual = transitions.find(t => t.child_id === c.id);
     const autoExit = kindergartenStart(c.dob);
@@ -79,84 +78,80 @@ export default function Transitions() {
   const graduatingThisYear = enriched.filter(c => c.monthsUntil !== null && c.monthsUntil >= 0 && c.monthsUntil <= 12).length;
   const total = children.length;
 
-  if (loading) return <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>Loading…</div>;
+  const statusColors = {
+    active: '#2D7A5F',
+    'graduating-soon': '#E8A838',
+    graduated: '#8BA89A',
+    deferred: '#9B8EC4',
+  };
+  const statusLabels = {
+    active: 'Active',
+    'graduating-soon': 'Graduating Soon',
+    graduated: 'Graduated',
+    deferred: 'Deferred',
+  };
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)', fontWeight: 600 }}>Loading</div>;
 
   return (
     <div>
-      <SectionTitle action={<Btn onClick={openAdd} variant="primary">+ Add Transition</Btn>}>
+      <SectionTitle action={<Btn onClick={openAdd} variant="primary">Add Transition</Btn>}>
         Transitions & Graduation
       </SectionTitle>
 
-      {/* Summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
-        <div className="glass" style={{ borderRadius: 16, padding: 20, textAlign: 'center', border: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 36, fontWeight: 900, color: '#E8734A' }}>{graduatingThisYear}</div>
-          <div style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 700 }}>Graduating within 12 months</div>
+        <div className="glass" style={{ borderRadius: 'var(--radius)', padding: 24, textAlign: 'center', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 36, fontWeight: 900, color: '#D65A4A', lineHeight: 1 }}>{graduatingThisYear}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 700, marginTop: 8, letterSpacing: 0.5, textTransform: 'uppercase' }}>Graduating within 12 months</div>
         </div>
-        <div className="glass" style={{ borderRadius: 16, padding: 20, textAlign: 'center', border: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 36, fontWeight: 900, color: '#5BAD5B' }}>{total - graduatingThisYear}</div>
-          <div style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 700 }}>Active / Long-term</div>
+        <div className="glass" style={{ borderRadius: 'var(--radius)', padding: 24, textAlign: 'center', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 36, fontWeight: 900, color: '#2D7A5F', lineHeight: 1 }}>{total - graduatingThisYear}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 700, marginTop: 8, letterSpacing: 0.5, textTransform: 'uppercase' }}>Active / Long-term</div>
         </div>
-        <div className="glass" style={{ borderRadius: 16, padding: 20, textAlign: 'center', border: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 36, fontWeight: 900, color: '#3A8C6E' }}>{total}</div>
-          <div style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 700 }}>Total Enrolled</div>
+        <div className="glass" style={{ borderRadius: 'var(--radius)', padding: 24, textAlign: 'center', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 36, fontWeight: 900, color: '#3D9A7A', lineHeight: 1 }}>{total}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 700, marginTop: 8, letterSpacing: 0.5, textTransform: 'uppercase' }}>Total Enrolled</div>
         </div>
       </div>
 
-      {enriched.length === 0 && <EmptyState icon="🎓" message="No children enrolled yet." />}
+      {enriched.length === 0 && <EmptyState icon="-" message="No children enrolled yet." />}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
         {enriched.map(c => {
-          const statusColors = {
-            active: '#5BAD5B',
-            'graduating-soon': '#FFB800',
-            graduated: '#8A9AB0',
-            deferred: '#9B8EC4',
-          };
-          const statusLabels = {
-            active: 'Active',
-            'graduating-soon': 'Graduating Soon',
-            graduated: 'Graduated',
-            deferred: 'Deferred',
-          };
-          const color = statusColors[c.status] || '#3A8C6E';
+          const color = statusColors[c.status] || '#2D7A5F';
           return (
-            <div key={c.id} className="hover-lift" style={{
-              background: 'var(--card)', borderRadius: 18, padding: 20,
-              border: `2px solid ${color}25`, boxShadow: 'var(--shadow)',
-              display: 'flex', flexDirection: 'column', gap: 12,
+            <div key={c.id} className="hover-lift card-premium" style={{
+              padding: 24, display: 'flex', flexDirection: 'column', gap: 14,
+              borderLeft: `4px solid ${color}`,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <Avatar child={c} size={48} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 900, fontSize: 17 }}>{c.name}</div>
-                  <div style={{ fontSize: 13, color: 'var(--text3)' }}>Age {calcAgeYears(c.dob) || c.age}</div>
+                  <div style={{ fontWeight: 900, fontSize: 16, color: 'var(--text)' }}>{c.name}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>Age {calcAgeYears(c.dob) || c.age}</div>
                 </div>
-                <div style={{
-                  padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 900,
-                  background: `${color}18`, color: color,
-                }}>
+                <div className="badge" style={{ background: `${color}15`, color: color }}>
                   {statusLabels[c.status] || c.status}
                 </div>
               </div>
 
-              <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text2)' }}>
-                <div>🎓 <strong>Expected Exit:</strong> {c.exitDate || 'Not set'}</div>
+              <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-secondary)', fontWeight: 500 }}>
+                <div><strong style={{ color: 'var(--text)' }}>Expected Exit:</strong> {c.exitDate || 'Not set'}</div>
                 {c.monthsUntil !== null && c.monthsUntil >= 0 && (
-                  <div>⏳ <strong>Leaves in:</strong> {c.monthsUntil} months</div>
+                  <div><strong style={{ color: 'var(--text)' }}>Leaves in:</strong> {c.monthsUntil} months</div>
                 )}
                 {c.monthsUntil !== null && c.monthsUntil < 0 && (
-                  <div>✅ <strong>Graduated</strong></div>
+                  <div style={{ color: '#8BA89A', fontWeight: 700 }}>Graduated</div>
                 )}
-                {c.notes && <div style={{ marginTop: 6, color: '#CC8800', fontSize: 13 }}>📝 {c.notes}</div>}
+                {c.notes && <div style={{ marginTop: 6, color: '#B07820', fontSize: 13, fontWeight: 500 }}>{c.notes}</div>}
               </div>
 
               <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
                 <Btn onClick={() => openEdit({ id: c.manualId, child_id: c.id, expected_exit_date: c.manualId ? c.exitDate : '', status: c.status, notes: c.notes || '' })} variant="ghost" size="sm" full>
-                  {c.manualId ? '✏️ Edit' : '➕ Set Exit Date'}
+                  {c.manualId ? 'Edit' : 'Set Exit Date'}
                 </Btn>
                 {c.manualId && (
-                  <Btn onClick={() => del(c.manualId)} variant="danger" size="sm" style={{ flex: 0, background: '#FFE8E8', color: '#FF6B6B' }}>✕</Btn>
+                  <Btn onClick={() => del(c.manualId)} variant="danger" size="sm" style={{ flex: 0, background: 'rgba(214,90,74,0.1)', color: 'var(--danger)' }}>Remove</Btn>
                 )}
               </div>
             </div>
