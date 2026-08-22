@@ -324,20 +324,20 @@ export default function AdminView({ onBack }) {
 
       {/* Tab bar */}
       <div style={{
-        background: 'var(--card)', borderBottom: '2px solid var(--border)',
-        padding: '0 24px', display: 'flex', gap: 4, overflowX: 'auto',
-        transition: 'background 0.3s',
-      }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{
-            padding: '14px 20px', border: 'none', background: 'none',
-            fontFamily: 'Nunito', fontWeight: 700, fontSize: 14, cursor: 'pointer',
-            color: tab === t.id ? '#3A8C6E' : 'var(--text2)',
-            borderBottom: tab === t.id ? '3px solid #3A8C6E' : '3px solid transparent',
-            whiteSpace: 'nowrap', transition: 'all 0.15s',
-          }}>{t.label}</button>
-        ))}
-      </div>
+  background: 'var(--card)', borderBottom: '2px solid var(--border)',
+  padding: '0 24px', display: 'flex', gap: 4, overflowX: 'auto',
+  transition: 'background 0.3s',
+}}>
+  {TABS.map(t => (
+    <button key={t.id} onClick={() => setTab(t.id)} style={{
+      padding: '14px 20px', border: 'none', background: 'none',
+      fontFamily: 'Nunito', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+      color: tab === t.id ? '#3A8C6E' : 'var(--text2)',
+      borderBottom: tab === t.id ? '3px solid #3A8C6E' : '3px solid transparent',
+      whiteSpace: 'nowrap', transition: 'all 0.15s',
+    }}>{t.label}</button>
+  ))}
+</div>
 
       {/* Content */}
       <div style={{ padding: 24, maxWidth: 1100, margin: '0 auto' }}>
