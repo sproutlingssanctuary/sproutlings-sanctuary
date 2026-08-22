@@ -142,74 +142,96 @@ export default function KioskView({ onAdminAccess }) {
         {toast && <Toast msg={toast.msg} color={toast.color} />}
 
         {/* Child List */}
-        {step === 'list' && (
-          <>
-            <div style={{ marginBottom: 20 }}>
-              <input
-                placeholder="Search child name..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                style={{
-                  fontSize: 16, padding: '16px 20px', borderRadius: 'var(--radius)',
-                  border: '1.5px solid var(--border)', width: '100%', background: 'var(--bg-elevated)',
-                  boxShadow: 'var(--shadow-sm)',
-                }}
-              />
-            </div>
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14, marginBottom: 24,
-            }}>
-              {filtered.map(child => {
-                const checked = isIn(child);
-                const rec = todayRecs.filter(r => r.child_id === child.id).sort((a,b)=>(b.check_in||0)-(a.check_in||0))[0];
-                const birthday = isBirthdayToday(child.dob);
-                const displayAge = calcAgeDisplay(child.dob, child.age);
-                return (
-                  <button key={child.id} onClick={() => handleSelect(child)} className="hover-lift"
-                    style={{
-                      background: birthday ? 'linear-gradient(135deg, rgba(232,168,56,0.08), var(--bg-elevated))' : 'var(--bg-elevated)',
-                      borderRadius: 'var(--radius)',
-                      border: `2px solid ${checked ? 'var(--primary)' : birthday ? 'var(--accent)' : 'var(--border)'}`,
-                      padding: '20px', display: 'flex', alignItems: 'center', gap: 14,
-                      cursor: 'pointer', textAlign: 'left', width: '100%',
-                      boxShadow: checked ? '0 0 0 3px var(--primary-glow)' : birthday ? '0 4px 20px var(--accent-glow)' : 'var(--shadow)',
-                    }}
-                  >
-                    <div style={{ position: 'relative' }}>
-                      <Avatar child={child} size={52} />
-                      {birthday && <div className="birthday-glow" style={{
-                        position: 'absolute', inset: -3, borderRadius: '50%',
-                        border: '2px solid var(--accent)',
-                      }} />}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{child.name}</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 500 }}>{displayAge}</div>
-                      {birthday && (
-                        <div className="badge" style={{ background: 'var(--accent-glow)', color: '#B07820', marginBottom: 4 }}>
-                          Happy Birthday
-                        </div>
-                      )}
-                      <div style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '4px 12px', borderRadius: 100,
-                        background: checked ? 'var(--primary-glow)' : 'var(--bg)',
-                        color: checked ? 'var(--primary)' : 'var(--text-muted)',
-                        fontSize: 12, fontWeight: 700,
-                      }}>
-                        {checked
-                          ? `In since ${fmt(rec?.check_in)}`
-                          : 'Not checked in'
-                        }
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        )}
+       {step === 'list' && (
+  <>
+    <div style={{ marginBottom: 20 }}>
+      <input
+        placeholder="Enter your child's name..."
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        style={{
+          fontSize: 16, padding: '18px 24px', borderRadius: 'var(--radius)',
+          border: '1.5px solid var(--border)', width: '100%', background: 'var(--bg-elevated)',
+          boxShadow: 'var(--shadow-sm)',
+        }}
+        autoFocus
+      />
+    </div>
 
+    {search.length < 2 ? (
+      <div style={{
+        textAlign: 'center', padding: '80px 20px', color: 'var(--text-muted)',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}>S</div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 8 }}>
+          Welcome to {APP_NAME}
+        </div>
+        <div style={{ fontSize: 14, fontWeight: 500 }}>
+          Type your child's name above to check in
+        </div>
+      </div>
+    ) : filtered.length === 0 ? (
+      <div style={{
+        textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)',
+        fontSize: 15, fontWeight: 500,
+      }}>
+        No child found matching "{search}"
+      </div>
+    ) : (
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14, marginBottom: 24,
+      }}>
+        {filtered.map(child => {
+          const checked = isIn(child);
+          const rec = todayRecs.filter(r => r.child_id === child.id).sort((a,b)=>(b.check_in||0)-(a.check_in||0))[0];
+          const birthday = isBirthdayToday(child.dob);
+          const displayAge = calcAgeDisplay(child.dob, child.age);
+          return (
+            <button key={child.id} onClick={() => handleSelect(child)} className="hover-lift"
+              style={{
+                background: birthday ? 'linear-gradient(135deg, rgba(232,168,56,0.08), var(--bg-elevated))' : 'var(--bg-elevated)',
+                borderRadius: 'var(--radius)',
+                border: `2px solid ${checked ? 'var(--primary)' : birthday ? 'var(--accent)' : 'var(--border)'}`,
+                padding: '20px', display: 'flex', alignItems: 'center', gap: 14,
+                cursor: 'pointer', textAlign: 'left', width: '100%',
+                boxShadow: checked ? '0 0 0 3px var(--primary-glow)' : birthday ? '0 4px 20px var(--accent-glow)' : 'var(--shadow)',
+              }}
+            >
+              <div style={{ position: 'relative' }}>
+                <Avatar child={child} size={52} />
+                {birthday && <div className="birthday-glow" style={{
+                  position: 'absolute', inset: -3, borderRadius: '50%',
+                  border: '2px solid var(--accent)',
+                }} />}
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{child.name}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 500 }}>{displayAge}</div>
+                {birthday && (
+                  <div className="badge" style={{ background: 'var(--accent-glow)', color: '#B07820', marginBottom: 4 }}>
+                    Happy Birthday
+                  </div>
+                )}
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '4px 12px', borderRadius: 100,
+                  background: checked ? 'var(--primary-glow)' : 'var(--bg)',
+                  color: checked ? 'var(--primary)' : 'var(--text-muted)',
+                  fontSize: 12, fontWeight: 700,
+                }}>
+                  {checked
+                    ? `In since ${fmt(rec?.check_in)}`
+                    : 'Not checked in'
+                  }
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    )}
+  </>
+)}
         {/* Action Screen */}
         {step === 'action' && selected && (
           <div className="slide-up glass" style={{
