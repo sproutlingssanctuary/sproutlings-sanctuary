@@ -14,7 +14,12 @@ function calcAge(dob){
   if(m<0||(m===0&&now.getDate()<birth.getDate()))age--;
   return age;
 }
-
+// ─── Transitions ─────────────────────────────────────────────────────────────
+app.get('/api/transitions', auth, async(_,res)=>{try{const rows=await query(`SELECT t.*,c.name,c.dob,c.age,c.initials,c.color FROM transitions t JOIN children c ON t.child_id=c.id ORDER BY t.expected_exit_date`);res.json(rows);}catch(e){res.status(500).json({error:e.message});}});
+app.post('/api/transitions', auth, async(req,res)=>{try{const{childId,expected_exit_date,status,notes}=req.body;const r=await query(`INSERT INTO transitions(child_id,expected_exit_date,status,notes)VALUES($1,$2,$3,$4)RETURNING id`,[childId,expected_exit_date||null,status||'active',notes||'']);res.json({id:r[0].id});}catch(e){res.status(500).json({error:e.message});}});
+app.put('/api/transitions/:id', auth, async(req,res)=>{try{const{expected_exit_date,status,notes}=req.body;await query(`UPDATE transitions SET expected_exit_date=$1,status=$2,notes=$3 WHERE id=$4`,[expected_exit_date||null,status||'active',notes||'',req.params.id]);res.json({ok:true});}catch(e){res.status(500).json({error:e.message});}});
+app.delete('/api/transitions/:id', auth, async(req,res)=>{try{await query('DELETE FROM transitions WHERE id=$1',[req.params.id]);res.json({ok:true});}catch(e){res.status(500).json({error:e.message});}});
+  
 async function initDb(){
 await query(`CREATE TABLE IF NOT EXISTS staff(id SERIAL PRIMARY KEY,username TEXT UNIQUE NOT NULL,password_hash TEXT NOT NULL,role TEXT DEFAULT 'staff',created_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT*1000);CREATE TABLE IF NOT EXISTS children(id SERIAL PRIMARY KEY,name TEXT NOT NULL,age INTEGER,dob DATE,initials TEXT,color TEXT DEFAULT '#3A8C6E',parents TEXT,emergency_contact TEXT,notes TEXT,pin TEXT,photo TEXT,active INTEGER DEFAULT 1,created_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT*1000);CREATE TABLE IF NOT EXISTS attendance(id SERIAL PRIMARY KEY,child_id INTEGER NOT NULL,date TEXT NOT NULL,check_in BIGINT,check_out BIGINT,who TEXT);CREATE TABLE IF NOT EXISTS daily_logs(id SERIAL PRIMARY KEY,child_id INTEGER NOT NULL,date TEXT NOT NULL,type TEXT NOT NULL,note TEXT,created_by TEXT,created_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::BIGINT*1000);`);
 const s=await queryOne('SELECT id FROM staff LIMIT 1');
