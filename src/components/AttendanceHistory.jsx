@@ -44,13 +44,17 @@ export default function AttendanceHistory() {
 
   useEffect(() => { load(); }, [load]);
 
-  const doExport = () => {
-    const params = {};
-    if (filterChild) params.child_id = filterChild;
-    if (dateFrom) params.date_from = dateFrom;
-    if (dateTo) params.date_to = dateTo;
-    api.exportCSV(params);
-  };
+  const doExport = async () => {
+  const params = {};
+  if (filterChild) params.child_id = filterChild;
+  if (dateFrom) params.date_from = dateFrom;
+  if (dateTo) params.date_to = dateTo;
+  try {
+    await api.exportCSV(params);
+  } catch (e) {
+    alert('Download failed: ' + e.message);
+  }
+};
 
   const checkinRecs = records.filter(r => r.check_in);
 
