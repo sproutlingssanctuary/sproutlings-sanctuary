@@ -104,3 +104,7 @@ export const deleteLog = (id)   => request(`/logs/${id}`, { method: 'DELETE' });
 export const getStaff    = ()     => request('/staff');
 export const addStaff    = (data) => request('/staff', { method: 'POST', body: JSON.stringify(data) });
 export const deleteStaff = (id)   => request(`/staff/${id}`, { method: 'DELETE' });
+export const getTransitions = () => request('/transitions');
+export const addTransition = (data) => request('/transitions', { method: 'POST', body: JSON.stringify(data) });
+export const updateTransition = (id, data) => request(`/transitions/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteTransition = (id) => request(`/transitions/${id}`, { method: 'DELETE' });
