@@ -6,6 +6,7 @@ import ChildrenManager from './ChildrenManager';
 import StaffManager from './StaffManager';
 import AttendanceHistory from './AttendanceHistory';
 import DailyLogs from './DailyLogs';
+import Transitions from './Transitions';
 
 function fmt(ts) {
   if (!ts) return '—';
