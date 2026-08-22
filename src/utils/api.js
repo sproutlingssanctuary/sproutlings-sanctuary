@@ -68,17 +68,30 @@ export const getHistory  = (params = {}) => {
   return request(`/attendance/history?${q}`);
 };
 
-export const exportCSV = (params = {}) => {
+export const exportCSV = async (params = {}) => {
   const q = new URLSearchParams(params).toString();
   const token = getToken();
   const url = `${BASE}/reports/attendance-csv?${q}`;
+  
+  const res = await fetch(url, {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+  });
+  
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Download failed' }));
+    throw new Error(err.error || 'Download failed');
+  }
+  
+  const blob = await res.blob();
+  const blobUrl = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
-  // Pass token via query param for file downloads (alternative: cookie)
-  a.href = url + `&token=${token}`;
+  a.href = blobUrl;
   a.download = `attendance_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(blobUrl);
 };
-
 // ─── Daily Logs ──────────────────────────────────────────────────────────────
 export const getLogs  = (params = {}) => {
   const q = new URLSearchParams(params).toString();
