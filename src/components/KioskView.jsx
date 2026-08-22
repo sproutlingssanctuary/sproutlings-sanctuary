@@ -57,7 +57,6 @@ export default function KioskView({ onAdminAccess }) {
     return () => clearInterval(id);
   }, [load]);
 
-  // Weather fetch
   useEffect(() => {
     if (!FEATURES.weather || !WEATHER_LAT || !WEATHER_LON) return;
     fetch(`https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LAT}&longitude=${WEATHER_LON}&current_weather=true`)
@@ -99,12 +98,12 @@ export default function KioskView({ onAdminAccess }) {
         const { valid } = await api.verifyPin(selected.id, pin);
         if (!valid) {
           if (FEATURES.sounds) playError();
-          showToast('❌ Wrong PIN — try again', 'coral');
+          showToast('Wrong PIN — try again', 'coral');
           setStep('action'); setPinMode(null); return;
         }
       } catch {
         if (FEATURES.sounds) playError();
-        showToast('❌ Error verifying PIN', 'coral'); return;
+        showToast('Error verifying PIN', 'coral'); return;
       }
     }
 
@@ -194,7 +193,7 @@ export default function KioskView({ onAdminAccess }) {
                       borderRadius: 18,
                       border: `2px solid ${checked ? '#5BAD5B' : birthday ? '#FFB800' : 'var(--border)'}`,
                       padding: '18px 16px', display: 'flex', alignItems: 'center', gap: 14,
-                      cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
+                      cursor: 'pointer', textAlign: 'left',
                       boxShadow: checked ? '0 0 0 4px #5BAD5B18' : birthday ? '0 4px 16px rgba(255,184,0,0.2)' : 'var(--shadow)',
                       width: '100%',
                     }}
@@ -262,7 +261,7 @@ export default function KioskView({ onAdminAccess }) {
                   width: '100%', padding: '22px', borderRadius: 16,
                   background: loading ? '#ccc' : '#5BAD5B', color: '#fff',
                   fontWeight: 900, fontSize: 22, border: 'none', cursor: loading ? 'wait' : 'pointer',
-                  marginBottom: 14, transition: 'all 0.15s',
+                  marginBottom: 14,
                   boxShadow: '0 4px 16px rgba(91, 173, 91, 0.3)',
                 }}
               >✓ Check In</button>
@@ -272,7 +271,7 @@ export default function KioskView({ onAdminAccess }) {
                   width: '100%', padding: '22px', borderRadius: 16,
                   background: loading ? '#ccc' : '#E8734A', color: '#fff',
                   fontWeight: 900, fontSize: 22, border: 'none', cursor: loading ? 'wait' : 'pointer',
-                  marginBottom: 14, transition: 'all 0.15s',
+                  marginBottom: 14,
                   boxShadow: '0 4px 16px rgba(255, 107, 107, 0.3)',
                 }}
               >→ Check Out</button>
@@ -280,16 +279,10 @@ export default function KioskView({ onAdminAccess }) {
             <button onClick={() => { setStep('list'); setSelected(null); }}
               style={{
                 background: 'transparent', border: '2px solid var(--border)', borderRadius: 12,
-                padding: '12
-            <button onClick={() => { setStep('list'); setSelected(null); }}
-              style={{
-                background: 'transparent', border: '2px solid var(--border)', borderRadius: 12,
                 padding: '12px 24px', fontFamily: 'Nunito', fontWeight: 700, fontSize: 16,
                 cursor: 'pointer', color: 'var(--text2)',
               }}
-            >
-              ← Back to List
-            </button>
+            >← Back to List</button>
           </div>
         )}
 
@@ -326,18 +319,14 @@ export default function KioskView({ onAdminAccess }) {
                 border: 'none', cursor: !signature.trim() || loading ? 'not-allowed' : 'pointer',
                 marginBottom: 12,
               }}
-            >
-              ✓ Confirm & {pinMode === 'in' ? 'Check In' : 'Check Out'}
-            </button>
+            >✓ Confirm & {pinMode === 'in' ? 'Check In' : 'Check Out'}</button>
             <button onClick={() => { setStep('action'); setSigMode(false); setPinMode(null); }}
               style={{
                 background: 'transparent', border: '2px solid var(--border)', borderRadius: 12,
                 padding: '12px 24px', fontFamily: 'Nunito', fontWeight: 700, fontSize: 16,
                 cursor: 'pointer', color: 'var(--text2)',
               }}
-            >
-              ← Back
-            </button>
+            >← Back</button>
           </div>
         )}
 
@@ -371,9 +360,7 @@ export default function KioskView({ onAdminAccess }) {
                 background: 'none', border: 'none', color: 'var(--sky)',
                 fontFamily: 'Nunito', fontWeight: 700, cursor: 'pointer', fontSize: 14,
               }}
-            >
-              Admin Panel →
-            </button>
+            >Admin Panel →</button>
           </div>
         )}
       </div>
