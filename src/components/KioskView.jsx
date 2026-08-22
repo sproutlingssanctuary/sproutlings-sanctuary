@@ -281,3 +281,102 @@ export default function KioskView({ onAdminAccess }) {
               style={{
                 background: 'transparent', border: '2px solid var(--border)', borderRadius: 12,
                 padding: '12
+            <button onClick={() => { setStep('list'); setSelected(null); }}
+              style={{
+                background: 'transparent', border: '2px solid var(--border)', borderRadius: 12,
+                padding: '12px 24px', fontFamily: 'Nunito', fontWeight: 700, fontSize: 16,
+                cursor: 'pointer', color: 'var(--text2)',
+              }}
+            >
+              ← Back to List
+            </button>
+          </div>
+        )}
+
+        {/* Signature Screen */}
+        {step === 'signature' && selected && (
+          <div className="slide-up" style={{
+            background: '#fff', borderRadius: 24, padding: 36,
+            boxShadow: 'var(--shadow-md)', textAlign: 'center', maxWidth: 440, margin: '0 auto',
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>✍️</div>
+            <h2 style={{ fontSize: 24, marginBottom: 8 }}>Signature Required</h2>
+            <p style={{ color: 'var(--text2)', fontSize: 15, marginBottom: 24 }}>
+              Please type your full name to confirm {pinMode === 'in' ? 'drop-off' : 'pick-up'} of <strong>{selected.name}</strong>
+            </p>
+            <input placeholder="Type your full name..." value={signature}
+              onChange={e => setSignature(e.target.value)}
+              style={{
+                width: '100%', fontSize: 18, padding: '14px 16px',
+                borderRadius: 12, border: '2px solid var(--border)',
+                fontFamily: 'cursive', textAlign: 'center', marginBottom: 20,
+              }}
+              autoFocus
+            />
+            <div style={{ background: '#f8f9fa', borderRadius: 12, padding: '12px 16px', marginBottom: 20, textAlign: 'left' }}>
+              <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 4 }}>Confirming:</div>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>{who} is {pinMode === 'in' ? 'dropping off' : 'picking up'} {selected.name}</div>
+              <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 4 }}>{new Date().toLocaleString()}</div>
+            </div>
+            <button onClick={handleSignature} disabled={loading || !signature.trim()} className="ripple-btn"
+              style={{
+                width: '100%', padding: '18px', borderRadius: 14,
+                background: !signature.trim() || loading ? '#ccc' : pinMode === 'in' ? '#5BAD5B' : '#E8734A',
+                color: '#fff', fontWeight: 900, fontSize: 18,
+                border: 'none', cursor: !signature.trim() || loading ? 'not-allowed' : 'pointer',
+                marginBottom: 12,
+              }}
+            >
+              ✓ Confirm & {pinMode === 'in' ? 'Check In' : 'Check Out'}
+            </button>
+            <button onClick={() => { setStep('action'); setSigMode(false); setPinMode(null); }}
+              style={{
+                background: 'transparent', border: '2px solid var(--border)', borderRadius: 12,
+                padding: '12px 24px', fontFamily: 'Nunito', fontWeight: 700, fontSize: 16,
+                cursor: 'pointer', color: 'var(--text2)',
+              }}
+            >
+              ← Back
+            </button>
+          </div>
+        )}
+
+        {/* PIN Entry */}
+        {step === 'pin' && selected && (
+          <div className="slide-up" style={{
+            background: '#fff', borderRadius: 24, padding: 36,
+            boxShadow: 'var(--shadow-md)', maxWidth: 380, margin: '0 auto',
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <Avatar child={selected} size={56} />
+              <h2 style={{ marginTop: 12, fontSize: 20 }}>{selected.name}</h2>
+              <p style={{ color: 'var(--text2)', fontSize: 14, marginTop: 4 }}>
+                {who} is {pinMode === 'in' ? 'dropping off' : 'picking up'}
+              </p>
+            </div>
+            <PinPad
+              label={`Enter PIN to check ${pinMode}`}
+              onSubmit={(pin) => finalize(pinMode, pin)}
+              onCancel={() => { setStep('action'); setPinMode(null); }}
+            />
+          </div>
+        )}
+
+        {/* Footer */}
+        {step === 'list' && (
+          <div style={{ textAlign: 'center', marginTop: 12, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+            <span style={{ color: 'var(--text3)', fontSize: 14 }}>Staff? </span>
+            <button onClick={onAdminAccess}
+              style={{
+                background: 'none', border: 'none', color: 'var(--sky)',
+                fontFamily: 'Nunito', fontWeight: 700, cursor: 'pointer', fontSize: 14,
+              }}
+            >
+              Admin Panel →
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
