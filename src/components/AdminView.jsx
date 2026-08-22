@@ -277,6 +277,7 @@ const TABS = [
   { id: 'staff',     label: '👤 Staff' },
   { id: 'history',   label: '📅 History' },
   { id: 'logs',      label: '📋 Daily Logs' },
+  { id: 'transitions', label: '🎓 Transitions' },
 ];
 
 export default function AdminView({ onBack }) {
@@ -347,6 +348,7 @@ export default function AdminView({ onBack }) {
         {tab === 'staff'     && <StaffManager />}
         {tab === 'history'   && <AttendanceHistory />}
         {tab === 'logs'      && <DailyLogs />}
+        {tab === 'transitions' && <Transitions />}
       </div>
     </div>
   );
