@@ -4,7 +4,7 @@ import * as api from '../utils/api';
 import { APP_SHORT } from '../config';
 import ChildrenManager from './ChildrenManager';
 import StaffManager from './StaffManager';
-import AttendanceHistory from './AttendanceHistory';
+import AttendanceHistory, { DailyAlert } from './AttendanceHistory';
 import DailyLogs from './DailyLogs';
 import Transitions from './Transitions';
 
@@ -128,21 +128,12 @@ function Dashboard() {
     return recs.some(r => r.check_out);
   });
 
-  // Fixed: single definition of notArrived
   const notArrived = children.filter(c => !today.some(r => r.child_id === c.id));
-
-  const absentToday = today.filter(r => r.absent === 1 || r.absent === true);
 
   const markChildAbsent = async (childId) => {
     if (!window.confirm('Mark this child as absent for today?')) return;
     try { await api.markAbsent(childId); await load(); } catch (e) { alert(e.message); }
   };
-
-  // Daily alert: if it's after 9:30 AM and kids haven't been checked in
-  const hour = new Date().getHours();
-  const minute = new Date().getMinutes();
-  const isLate = (hour > 9) || (hour === 9 && minute >= 30);
-  const unmarkedKids = isLate ? notArrived.filter(c => !absentToday.some(a => a.child_id === c.id)) : [];
 
   const StatCard = ({ label, value, color, sub }) => (
     <div className="card-premium hover-lift" style={{ padding: '24px 20px', textAlign: 'center', flex: 1, borderTop: `3px solid ${color}` }}>
@@ -162,6 +153,9 @@ function Dashboard() {
   return (
     <div>
       {showQR && <QRModal url={appUrl} onClose={() => setShowQR(false)} />}
+
+      {/* Daily Alert — shared component */}
+      <DailyAlert children={children} todayRecords={today} onRefresh={load} />
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
@@ -185,28 +179,6 @@ function Dashboard() {
         <span style={{ margin: '0 8px', color: 'var(--border-strong)' }}>|</span>
         Auto-refreshes every 30s
       </p>
-
-      {/* Late alert banner */}
-      {unmarkedKids.length > 0 && (
-        <div style={{
-          background: 'rgba(214,90,74,0.08)', border: '1px solid var(--danger)',
-          borderRadius: 'var(--radius-sm)', padding: '14px 18px', marginBottom: 20,
-          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap'
-        }}>
-          <span style={{ fontSize: 20 }}>⚠️</span>
-          <div style={{ flex: 1 }}>
-            <strong style={{ color: 'var(--danger)', fontSize: 14 }}>{unmarkedKids.length} child{unmarkedKids.length > 1 ? 'ren' : ''} not checked in yet</strong>
-            <span style={{ color: 'var(--text-muted)', fontSize: 13, marginLeft: 8 }}>It's past 9:30 AM</span>
-          </div>
-          <button onClick={() => unmarkedKids.forEach(c => markChildAbsent(c.id))}
-            style={{
-              padding: '6px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--danger)',
-              background: 'transparent', color: 'var(--danger)', fontWeight: 700, fontSize: 12, cursor: 'pointer'
-            }}>
-            Mark All Absent
-          </button>
-        </div>
-      )}
 
       {/* Stats */}
       <div style={{ display: 'flex', gap: 14, marginBottom: 28, flexWrap: 'wrap' }}>
