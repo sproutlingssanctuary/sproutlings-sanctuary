@@ -56,14 +56,14 @@ function getDaysAgoStr(n) {
 /* ───────────────────────────────────────────────
    Shared DailyAlert — used by Dashboard + History
    ─────────────────────────────────────────────── */
-export function DailyAlert({ children, todayRecords, onRefresh }) {
+export function DailyAlert({ allKids, todayRecords, onRefresh }) {
   const hour = new Date().getHours();
   const minute = new Date().getMinutes();
   const isLate = (hour > 9) || (hour === 9 && minute >= 30);
 
   const absentToday = todayRecords.filter(r => r.absent === 1 || r.absent === true);
   const hasRecord = new Set(todayRecords.map(r => r.child_id));
-  const unmarked = children.filter(c => !hasRecord.has(c.id) && !absentToday.some(a => a.child_id === c.id));
+  const unmarked = allKids.filter(c => !hasRecord.has(c.id) && !absentToday.some(a => a.child_id === c.id));
 
   if (!isLate || unmarked.length === 0) return null;
 
@@ -206,7 +206,7 @@ export default function AttendanceHistory() {
     <div>
       {/* Daily Alert */}
       {isTodayView && (
-        <DailyAlert children={children} todayRecords={records} onRefresh={load} />
+        <DailyAlert allKids={children} todayRecords={records} onRefresh={load} />
       )}
 
       <SectionTitle action={
