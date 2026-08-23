@@ -108,3 +108,5 @@ export const getTransitions = () => request('/transitions');
 export const addTransition = (data) => request('/transitions', { method: 'POST', body: JSON.stringify(data) });
 export const updateTransition = (id, data) => request(`/transitions/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteTransition = (id) => request(`/transitions/${id}`, { method: 'DELETE' });
+export const markAbsent = (childId) => request('/attendance/absent', { method: 'POST', body: JSON.stringify({ childId }) });
+export const getAbsentToday = () => request('/attendance/absent-today');
