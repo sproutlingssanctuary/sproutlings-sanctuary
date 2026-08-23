@@ -155,7 +155,7 @@ function Dashboard() {
       {showQR && <QRModal url={appUrl} onClose={() => setShowQR(false)} />}
 
       {/* Daily Alert — shared component */}
-      <DailyAlert children={children} todayRecords={today} onRefresh={load} />
+      <DailyAlert allKids={children} todayRecords={today} onRefresh={load} />
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
