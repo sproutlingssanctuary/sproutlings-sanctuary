@@ -20,7 +20,7 @@ function toInputTime(ts) {
 function fromInputTime(timeStr, baseDate) {
   if (!timeStr) return null;
   const [h, m] = timeStr.split(':').map(Number);
-  const d = new Date(baseDate);
+  const d = new Date(baseDate + 'T00:00:00');
   d.setHours(h, m, 0, 0);
   return d.getTime();
 }
@@ -36,6 +36,75 @@ function duration(checkIn, checkOut) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getYesterdayStr() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getDaysAgoStr(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* ───────────────────────────────────────────────
+   Shared DailyAlert — used by Dashboard + History
+   ─────────────────────────────────────────────── */
+export function DailyAlert({ children, todayRecords, onRefresh }) {
+  const hour = new Date().getHours();
+  const minute = new Date().getMinutes();
+  const isLate = (hour > 9) || (hour === 9 && minute >= 30);
+
+  const absentToday = todayRecords.filter(r => r.absent === 1 || r.absent === true);
+  const hasRecord = new Set(todayRecords.map(r => r.child_id));
+  const unmarked = children.filter(c => !hasRecord.has(c.id) && !absentToday.some(a => a.child_id === c.id));
+
+  if (!isLate || unmarked.length === 0) return null;
+
+  const markAllAbsent = async () => {
+    if (!window.confirm(`Mark ${unmarked.length} child${unmarked.length > 1 ? 'ren' : ''} as absent?`)) return;
+    try {
+      await Promise.all(unmarked.map(c => api.markAbsent(c.id)));
+      onRefresh();
+    } catch (e) { alert(e.message); }
+  };
+
+  return (
+    <div style={{
+      background: 'rgba(214,90,74,0.08)', border: '1.5px solid var(--danger)',
+      borderRadius: 'var(--radius-sm)', padding: '16px 20px', marginBottom: 24,
+      display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap'
+    }}>
+      <span style={{ fontSize: 22 }}>⚠️</span>
+      <div style={{ flex: 1, minWidth: 200 }}>
+        <strong style={{ color: 'var(--danger)', fontSize: 15 }}>
+          {unmarked.length} child{unmarked.length > 1 ? 'ren' : ''} not accounted for today
+        </strong>
+        <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4, fontWeight: 500 }}>
+          {unmarked.map(c => c.name).join(', ')}
+        </div>
+      </div>
+      <button onClick={markAllAbsent}
+        style={{
+          padding: '8px 16px', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--danger)',
+          background: 'transparent', color: 'var(--danger)', fontWeight: 800, fontSize: 13,
+          cursor: 'pointer', whiteSpace: 'nowrap'
+        }}>
+        Mark All Absent
+      </button>
+    </div>
+  );
+}
+
+/* ───────────────────────────────────────────────
+   AttendanceHistory
+   ─────────────────────────────────────────────── */
 export default function AttendanceHistory() {
   const [children, setChildren] = useState([]);
   const [records, setRecords]   = useState([]);
@@ -48,6 +117,9 @@ export default function AttendanceHistory() {
   const [editIn, setEditIn] = useState('');
   const [editOut, setEditOut] = useState('');
   const [editWho, setEditWho] = useState('');
+
+  const todayStr = getTodayStr();
+  const isTodayView = (!dateFrom && !dateTo) || (dateFrom === todayStr && dateTo === todayStr);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,6 +136,23 @@ export default function AttendanceHistory() {
   }, [filterChild, dateFrom, dateTo]);
 
   useEffect(() => { load(); }, [load]);
+
+  const setRange = (type) => {
+    const today = getTodayStr();
+    switch (type) {
+      case 'today':
+        setDateFrom(today); setDateTo(today); break;
+      case 'yesterday':
+        const y = getYesterdayStr();
+        setDateFrom(y); setDateTo(y); break;
+      case 'week':
+        setDateFrom(getDaysAgoStr(6)); setDateTo(today); break;
+      case 'month':
+        setDateFrom(getDaysAgoStr(29)); setDateTo(today); break;
+      case 'all':
+        setDateFrom(''); setDateTo(''); break;
+    }
+  };
 
   const doExport = () => {
     const params = {};
@@ -82,7 +171,7 @@ export default function AttendanceHistory() {
 
   const saveEdit = async () => {
     if (!editRecord) return;
-    const baseDate = editRecord.date + 'T00:00:00';
+    const baseDate = editRecord.date;
     const checkIn = editIn ? fromInputTime(editIn, baseDate) : null;
     const checkOut = editOut ? fromInputTime(editOut, baseDate) : null;
     try {
@@ -98,15 +187,53 @@ export default function AttendanceHistory() {
     catch (e) { alert('Could not delete: ' + e.message); }
   };
 
+  const markAbsent = async (childId) => {
+    if (!window.confirm('Mark this child as absent for today?')) return;
+    try { await api.markAbsent(childId); await load(); }
+    catch (e) { alert(e.message); }
+  };
+
   const checkinRecs = records.filter(r => r.check_in || r.absent);
+
+  /* ── Unmarked / Absent logic for Today view ── */
+  const absentRecords = isTodayView ? records.filter(r => r.absent === 1 || r.absent === true) : [];
+  const hasRecordIds = new Set(records.map(r => r.child_id));
+  const unmarkedKids = isTodayView
+    ? children.filter(c => !hasRecordIds.has(c.id) && !absentRecords.some(a => a.child_id === c.id))
+    : [];
 
   return (
     <div>
+      {/* Daily Alert */}
+      {isTodayView && (
+        <DailyAlert children={children} todayRecords={records} onRefresh={load} />
+      )}
+
       <SectionTitle action={
         <Btn onClick={doExport} variant="success">Export CSV</Btn>
       }>
         Attendance History
       </SectionTitle>
+
+      {/* Quick filters + manual filters */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        {[
+          { k: 'today', l: 'Today' },
+          { k: 'yesterday', l: 'Yesterday' },
+          { k: 'week', l: 'Last 7 Days' },
+          { k: 'month', l: 'Last 30 Days' },
+          { k: 'all', l: 'All Time' },
+        ].map(r => (
+          <button key={r.k} onClick={() => setRange(r.k)}
+            style={{
+              padding: '7px 14px', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--border)',
+              background: 'var(--bg-elevated)', color: 'var(--text-secondary)',
+              fontWeight: 700, fontSize: 12, cursor: 'pointer',
+            }}>
+            {r.l}
+          </button>
+        ))}
+      </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div style={{ flex: 2, minWidth: 180 }}>
@@ -220,6 +347,72 @@ export default function AttendanceHistory() {
             Showing {checkinRecs.length} records
           </p>
         </>
+      )}
+
+      {/* ── Not Accounted For (Today only) ── */}
+      {isTodayView && unmarkedKids.length > 0 && (
+        <div className="card-premium" style={{ marginTop: 24, borderTop: '3px solid var(--warning)', padding: 24 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 900, color: 'var(--warning)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 14 }}>
+            Not Accounted For ({unmarkedKids.length})
+          </h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 14, fontWeight: 500 }}>
+            These children have no check-in, check-out, or absent record for today.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {unmarkedKids.map(c => (
+              <div key={c.id} style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
+                background: 'var(--bg)', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--border)'
+              }}>
+                <Avatar child={c} size={34} />
+                <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text)' }}>{c.name}</span>
+                <button onClick={() => markAbsent(c.id)}
+                  style={{
+                    marginLeft: 4, padding: '5px 12px', borderRadius: 'var(--radius-sm)',
+                    border: '1.5px solid var(--danger)', background: 'transparent',
+                    color: 'var(--danger)', fontWeight: 800, fontSize: 12, cursor: 'pointer'
+                  }}>
+                  Mark Absent
+                </button>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 14 }}>
+            <button onClick={async () => {
+              if (!window.confirm(`Mark all ${unmarkedKids.length} as absent?`)) return;
+              try { await Promise.all(unmarkedKids.map(c => api.markAbsent(c.id))); await load(); }
+              catch (e) { alert(e.message); }
+            }} className="ripple-btn" style={{
+              padding: '10px 20px', borderRadius: 'var(--radius-sm)', border: 'none',
+              background: 'var(--danger)', color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer'
+            }}>
+              Mark All {unmarkedKids.length} Absent
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Marked Absent Today ── */}
+      {isTodayView && absentRecords.length > 0 && (
+        <div className="card-premium" style={{ marginTop: 20, borderTop: '3px solid var(--text-muted)', padding: 24, opacity: 0.9 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-muted)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 14 }}>
+            Marked Absent Today ({absentRecords.length})
+          </h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {absentRecords.map(r => {
+              const c = children.find(ch => ch.id === r.child_id);
+              return (
+                <div key={r.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
+                  background: 'var(--bg)', borderRadius: 'var(--radius-sm)', border: '1.5px dashed var(--border)'
+                }}>
+                  {c && <Avatar child={c} size={30} />}
+                  <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-muted)' }}>{c?.name || r.name || 'Unknown'}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* Edit Modal */}
