@@ -100,7 +100,7 @@ function Dashboard() {
   }, [load]);
 
   const clearTodayTimeline = async () => {
-    if (!window.confirm('Delete ALL of today\'s attendance records? This cannot be undone.')) return;
+    if (!window.confirm("Delete ALL of today's attendance records? This cannot be undone.")) return;
     setClearing(true);
     try {
       await Promise.all(today.map(r => api.deleteAttendance(r.id)));
@@ -121,25 +121,49 @@ function Dashboard() {
     const last = [...recs].sort((a,b)=>(Number(b.check_in)||0)-(Number(a.check_in)||0))[0];
     return last.check_in && !last.check_out;
   });
+
   const checkedOut = children.filter(c => {
     const recs = today.filter(r => r.child_id === c.id);
     if (!recs.length) return false;
     return recs.some(r => r.check_out);
   });
+
+  // Fixed: single definition of notArrived
   const notArrived = children.filter(c => !today.some(r => r.child_id === c.id));
+
+  const absentToday = today.filter(r => r.absent === 1 || r.absent === true);
+
+  const markChildAbsent = async (childId) => {
+    if (!window.confirm('Mark this child as absent for today?')) return;
+    try { await api.markAbsent(childId); await load(); } catch (e) { alert(e.message); }
+  };
+
+  // Daily alert: if it's after 9:30 AM and kids haven't been checked in
+  const hour = new Date().getHours();
+  const minute = new Date().getMinutes();
+  const isLate = (hour > 9) || (hour === 9 && minute >= 30);
+  const unmarkedKids = isLate ? notArrived.filter(c => !absentToday.some(a => a.child_id === c.id)) : [];
 
   const StatCard = ({ label, value, color, sub }) => (
     <div className="card-premium hover-lift" style={{ padding: '24px 20px', textAlign: 'center', flex: 1, borderTop: `3px solid ${color}` }}>
       <div id={sub ? 'present-counter' : undefined} style={{ fontSize: 40, fontWeight: 900, color, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 700, marginTop: 8, letterSpacing: 0.3 }}>{label}</div>
+      <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 700, marginTop: 8, letterSpacing: 0.5, textTransform: 'uppercase' }}>{label}</div>
     </div>
   );
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '80px', color: 'var(--text-muted)', fontWeight: 600 }}>Loading</div>;
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)', fontWeight: 500 }}>
+        Loading dashboard...
+      </div>
+    );
+  }
 
   return (
     <div>
       {showQR && <QRModal url={appUrl} onClose={() => setShowQR(false)} />}
+
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
         <h2 style={{ fontSize: 22, color: 'var(--text)', fontWeight: 900, letterSpacing: -0.5 }}>Attendance Dashboard</h2>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -155,18 +179,46 @@ function Dashboard() {
           }}>{clearing ? 'Clearing...' : 'Clear Today'}</button>
         </div>
       </div>
+
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24, fontWeight: 500 }}>
         {new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
         <span style={{ margin: '0 8px', color: 'var(--border-strong)' }}>|</span>
         Auto-refreshes every 30s
       </p>
+
+      {/* Late alert banner */}
+      {unmarkedKids.length > 0 && (
+        <div style={{
+          background: 'rgba(214,90,74,0.08)', border: '1px solid var(--danger)',
+          borderRadius: 'var(--radius-sm)', padding: '14px 18px', marginBottom: 20,
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap'
+        }}>
+          <span style={{ fontSize: 20 }}>⚠️</span>
+          <div style={{ flex: 1 }}>
+            <strong style={{ color: 'var(--danger)', fontSize: 14 }}>{unmarkedKids.length} child{unmarkedKids.length > 1 ? 'ren' : ''} not checked in yet</strong>
+            <span style={{ color: 'var(--text-muted)', fontSize: 13, marginLeft: 8 }}>It's past 9:30 AM</span>
+          </div>
+          <button onClick={() => unmarkedKids.forEach(c => markChildAbsent(c.id))}
+            style={{
+              padding: '6px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--danger)',
+              background: 'transparent', color: 'var(--danger)', fontWeight: 700, fontSize: 12, cursor: 'pointer'
+            }}>
+            Mark All Absent
+          </button>
+        </div>
+      )}
+
+      {/* Stats */}
       <div style={{ display: 'flex', gap: 14, marginBottom: 28, flexWrap: 'wrap' }}>
         <StatCard label="Currently Present" value={presentCount} color="#2D7A5F" sub />
         <StatCard label="Checked Out" value={checkedOut.length} color="#D65A4A" />
         <StatCard label="Not Arrived" value={notArrived.length} color="#8BA89A" />
         <StatCard label="Total Enrolled" value={children.length} color="#3D9A7A" />
       </div>
+
+      {/* Two-column grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+        {/* Currently Here */}
         <Card style={{ borderTop: '3px solid #2D7A5F' }}>
           <h3 style={{ fontSize: 14, color: '#2D7A5F', marginBottom: 16, fontWeight: 900, letterSpacing: 0.5, textTransform: 'uppercase' }}>Currently Here ({checkedIn.length})</h3>
           {checkedIn.length === 0
@@ -186,6 +238,8 @@ function Dashboard() {
               })
           }
         </Card>
+
+        {/* Went Home */}
         <Card style={{ borderTop: '3px solid #D65A4A' }}>
           <h3 style={{ fontSize: 14, color: '#D65A4A', marginBottom: 16, fontWeight: 900, letterSpacing: 0.5, textTransform: 'uppercase' }}>Went Home ({checkedOut.length})</h3>
           {checkedOut.length === 0
@@ -213,6 +267,8 @@ function Dashboard() {
           }
         </Card>
       </div>
+
+      {/* Today's Timeline */}
       <Card>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <h3 style={{ fontSize: 14, fontWeight: 900, color: 'var(--text)', letterSpacing: 0.5, textTransform: 'uppercase' }}>Today's Timeline</h3>
@@ -232,7 +288,7 @@ function Dashboard() {
                       <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: isCheckIn ? '#2D7A5F' : '#D65A4A' }} />
                       {c && <Avatar child={c} size={30} />}
                       <div style={{ flex: 1 }}>
-                        <span style={{ fontWeight: 800, color: 'var(--text)', fontSize: 14 }}>{r.name || '?'}</span>
+                        <span style={{ fontWeight: 800, color: 'var(--text)', fontSize: 14 }}>{r.name || c?.name || '?'}</span>
                         <span style={{ color: 'var(--text-secondary)', fontSize: 14, fontWeight: 500 }}>
                           {' '}{isCheckIn ? 'checked in' : 'checked out'}{' at '}
                           <strong>{fmt(isCheckIn ? r.check_in : r.check_out)}</strong>
@@ -251,6 +307,8 @@ function Dashboard() {
           )
         }
       </Card>
+
+      {/* Not Arrived Yet */}
       {notArrived.length > 0 && (
         <Card style={{ marginTop: 20 }}>
           <h3 style={{ fontSize: 14, marginBottom: 16, fontWeight: 900, color: 'var(--text-secondary)', letterSpacing: 0.5, textTransform: 'uppercase' }}>Not Arrived Yet ({notArrived.length})</h3>
@@ -259,6 +317,13 @@ function Dashboard() {
               <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'var(--bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
                 <Avatar child={c} size={30} />
                 <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text)' }}>{c.name}</span>
+                <button onClick={() => markChildAbsent(c.id)}
+                  style={{
+                    marginLeft: 4, padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)',
+                    background: 'transparent', fontSize: 11, color: 'var(--text-muted)', cursor: 'pointer', fontWeight: 600
+                  }}
+                  title="Mark absent"
+                >A</button>
               </div>
             ))}
           </div>
@@ -269,11 +334,11 @@ function Dashboard() {
 }
 
 const TABS = [
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'children',  label: 'Children' },
-  { id: 'staff',     label: 'Staff' },
-  { id: 'history',   label: 'History' },
-  { id: 'logs',      label: 'Daily Logs' },
+  { id: 'dashboard',   label: 'Dashboard' },
+  { id: 'children',    label: 'Children' },
+  { id: 'staff',       label: 'Staff' },
+  { id: 'history',     label: 'History' },
+  { id: 'logs',        label: 'Daily Logs' },
   { id: 'transitions', label: 'Transitions' },
 ];
 
@@ -351,11 +416,11 @@ export default function AdminView({ onBack }) {
 
       {/* Content */}
       <div style={{ padding: 28, maxWidth: 1100, margin: '0 auto' }}>
-        {tab === 'dashboard' && <Dashboard />}
-        {tab === 'children'  && <ChildrenManager />}
-        {tab === 'staff'     && <StaffManager />}
-        {tab === 'history'   && <AttendanceHistory />}
-        {tab === 'logs'      && <DailyLogs />}
+        {tab === 'dashboard'   && <Dashboard />}
+        {tab === 'children'    && <ChildrenManager />}
+        {tab === 'staff'       && <StaffManager />}
+        {tab === 'history'     && <AttendanceHistory />}
+        {tab === 'logs'        && <DailyLogs />}
         {tab === 'transitions' && <Transitions />}
       </div>
     </div>
