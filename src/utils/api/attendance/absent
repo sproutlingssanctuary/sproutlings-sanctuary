@@ -1,0 +1,23 @@
+// Express.js example
+app.post('/api/attendance/absent', async (req, res) => {
+  const { child_id } = req.body;
+  const today = new Date().toISOString().split('T')[0]; // "2026-08-23"
+  
+  // Check if already marked absent today
+  const existing = await db.query(
+    'SELECT * FROM attendance WHERE child_id = ? AND date = ? AND absent = 1',
+    [child_id, today]
+  );
+  
+  if (existing.length > 0) {
+    return res.json({ message: 'Already marked absent' });
+  }
+  
+  // Insert absent record
+  await db.query(
+    'INSERT INTO attendance (child_id, date, absent, created_at) VALUES (?, ?, 1, ?)',
+    [child_id, today, Date.now()]
+  );
+  
+  res.json({ success: true });
+});
