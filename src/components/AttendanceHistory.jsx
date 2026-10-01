@@ -6,7 +6,7 @@ function fmt(ts) {
   if (!ts) return '—';
   const ms = Number(ts);
   if (isNaN(ms) || ms <= 0) return '—';
-  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 function toInputTime(ts) {
