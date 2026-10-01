@@ -63,7 +63,7 @@ export const getToday    = () => request('/attendance/today');
 export const deleteAttendance = (id) => request(`/attendance/${id}`, { method: 'DELETE' });
 
 // ─── Attendance ──────────────────────────────────────────────────────────────
-export const updateAttendance = (id, data) => request(`/attendance/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const autoSignOut = () => request('/attendance/auto-signout');export const updateAttendance = (id, data) => request(`/attendance/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const getHistory  = (params = {}) => {
   const q = new URLSearchParams(params).toString();
   return request(`/attendance/history?${q}`);
