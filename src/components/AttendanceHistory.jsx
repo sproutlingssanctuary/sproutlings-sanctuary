@@ -267,7 +267,7 @@ export default function AttendanceHistory() {
           <div className="glass" style={{ borderRadius: 'var(--radius)', overflow: 'hidden', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1.5fr 0.5fr',
+              gridTemplateColumns: '2fr 1fr 1fr 1fr 1.5fr 0.5fr',
               padding: '14px 20px',
               fontSize: 11, fontWeight: 800, color: 'var(--text-muted)',
               textTransform: 'uppercase', letterSpacing: 1,
@@ -290,7 +290,7 @@ export default function AttendanceHistory() {
               return (
                 <div key={i} style={{
                   display: 'grid',
-                  gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1.5fr 0.5fr',
+                  gridTemplateColumns: '2fr 1fr 1fr 1fr 1.5fr 0.5fr',
                   padding: '12px 20px',
                   alignItems: 'center',
                   borderBottom: '1px solid var(--border)',
