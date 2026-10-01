@@ -174,6 +174,20 @@ app.delete('/api/attendance/:id', auth, async (req, res) => {
   try { await query('DELETE FROM attendance WHERE id=$1', [req.params.id]); res.json({ ok: true }); }
   catch(e) { res.status(500).json({ error: e.message }); }
 });
+// Auto sign-out: any kid still checked in at/after 5 PM gets signed out at 5:00 PM
+app.get('/api/attendance/auto-signout', async (_req, res) => {
+  try {
+    const nowPt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Vancouver' }));
+    if (nowPt.getHours() < 17) return res.json({ ok: true, signed_out: 0 });
+    const todayPt = `${nowPt.getFullYear()}-${String(nowPt.getMonth()+1).padStart(2,'0')}-${String(nowPt.getDate()).padStart(2,'0')}`;
+    const fivePm = new Date(nowPt); fivePm.setHours(17, 0, 0, 0);
+    const c = await pool.query(
+      `UPDATE attendance SET check_out=$1 WHERE date<=$2 AND check_out IS NULL`,
+      [fivePm.getTime(), todayPt]
+    );
+    res.json({ ok: true, signed_out: c.rowCount });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
 app.put('/api/attendance/:id', auth, async (req, res) => {
   try {
     const { check_in, check_out, who } = req.body;
