@@ -131,6 +131,7 @@ export default function AttendanceHistory() {
       const [kids, recs] = await Promise.all([api.getChildrenFull(), api.getHistory(params)]);
       setChildren(kids);
       setRecords(recs);
+      api.autoSignOut().then(r => { if (r && r.signed_out > 0) load(); }).catch(() => {});
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, [filterChild, dateFrom, dateTo]);
