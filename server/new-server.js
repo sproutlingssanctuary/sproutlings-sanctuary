@@ -248,8 +248,8 @@ app.get('/api/reports/attendance-csv', auth, async (req, res) => {
     const rows = await query(q+' ORDER BY a.date DESC,c.name', p);
     const ft = ts => ts ? new Date(Number(ts)).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
     const fd = (a,b) => a&&b ? Math.round((Number(b)-Number(a))/60000)+' min' : '';
-    let csv = 'Date,Child,Age,Check In,Check Out,Duration,By\n';
-    rows.forEach(r => { csv += `${r.date},"${r.name}",${r.age||''},${ft(r.check_in)},${ft(r.check_out)},${fd(r.check_in,r.check_out)},"${r.who||''}"\n`; });
+    let csv = 'Date,Child,Age,Check In,Check Out,By\n';
+    rows.forEach(r => { csv += `${r.date},"${r.name}",${r.age||''},${ft(r.check_in)},${ft(r.check_out)},"${r.who||''}"\n`; });
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename=attendance_${new Date().toISOString().slice(0,10)}.csv`);
     res.send(csv);
